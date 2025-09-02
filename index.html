@@ -7,56 +7,44 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <h1>Meme Coin Battle Arena ⚔️</h1>
-
-    <div id="hero-selection">
-      <label>Выберите героя: </label>
-      <select id="player-select">
-        <option value="">--Выберите--</option>
-        <option value="Pepe">Pepe 🐸</option>
-        <option value="Doge">Doge 🐕</option>
-        <option value="Bonk">Bonk 🐶</option>
-        <option value="Penguin">Penguin 🐧</option>
-        <option value="Trump">Trump 🧑‍🦳</option>
-        <option value="Popcat">Popcat 😺</option>
-        <option value="Melania">Melania 👩</option>
+  <div class="container">
+    <h1>Meme Coin Battle Arena</h1>
+    <div class="select-hero">
+      <label for="playerSelect">Выберите героя:</label>
+      <select id="playerSelect">
+        <option value="">--Выбрать--</option>
+        <option value="Pepe">Pepe</option>
+        <option value="Doge">Doge</option>
+        <option value="Bonk">Bonk</option>
+        <option value="Penguin">Penguin</option>
+        <option value="Trump">Trump</option>
+        <option value="Popcat">Popcat</option>
+        <option value="Melania">Melania</option>
       </select>
-      <button id="start-battle">Сразиться</button>
+      <button id="startBtn">Сразиться</button>
     </div>
 
-    <div id="battle-field" class="hidden">
-      <div class="hero-container">
-        <h2 id="player-name"></h2>
-        <img id="player-img" src="" alt="" class="hero-img">
-        <p>HP: <span id="player-hp"></span></p>
-        <div class="hp-bar">
-          <div id="player-hp-bar" class="hp-fill"></div>
-        </div>
-        <p id="player-stats"></p>
+    <div id="battleField" class="hidden">
+      <div class="hero">
+        <h3 id="playerName"></h3>
+        <img id="playerImg" src="" alt="Player">
+        <div class="hp-bar"><div id="playerHP" class="hp"></div></div>
       </div>
-
-      <div class="hero-container">
-        <h2 id="enemy-name"></h2>
-        <img id="enemy-img" src="" alt="" class="hero-img">
-        <p>HP: <span id="enemy-hp"></span></p>
-        <div class="hp-bar">
-          <div id="enemy-hp-bar" class="hp-fill"></div>
-        </div>
-        <p id="enemy-stats"></p>
+      <div class="hero">
+        <h3 id="enemyName"></h3>
+        <img id="enemyImg" src="" alt="Enemy">
+        <div class="hp-bar"><div id="enemyHP" class="hp"></div></div>
       </div>
     </div>
 
-    <div id="battle-log-container" class="hidden">
-      <h3>Battle Log:</h3>
-      <ul id="battle-log"></ul>
+    <div id="battleLogContainer" class="hidden">
+      <h3>Лог боя:</h3>
+      <div id="battleLog"></div>
     </div>
 
-    <div id="result-modal" class="modal hidden">
-      <div class="modal-content">
-        <h2 id="result-text"></h2>
-        <button id="play-again">Играть снова</button>
-      </div>
+    <div id="resultModal" class="hidden">
+      <p id="resultText"></p>
+      <button id="playAgainBtn">Играть снова</button>
     </div>
   </div>
 
