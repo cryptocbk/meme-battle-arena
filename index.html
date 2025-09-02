@@ -1,91 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Meme Coin Battle Arena</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meme Coin Battle Arena</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="neon-bg"></div>
+<header>
+  <h1>Meme Coin Battle Arena</h1>
+  <div class="balance">Balance: <span id="balance">3.00</span> ◎ SOL</div>
+</header>
 
-  <header class="topbar">
-    <h1>Meme Coin Battle Arena</h1>
-    <div class="balance">Balance: <span id="solBalance">3.000</span> SOL</div>
-  </header>
+<main>
+<section class="hero-selection">
+  <h2>Choose your Hero</h2>
+  <div id="heroes" class="hero-grid"></div>
+</section>
 
-  <main class="main">
-    <section id="heroSelection" class="card">
-      <h2>Select your hero</h2>
-      <div id="heroCards" class="heroes"></div>
+<section class="battle-settings">
+  <h2>Battle Settings</h2>
+  <label for="multiplier">Multiplier:</label>
+  <select id="multiplier">
+    <option value="2">x2 (50%)</option>
+    <option value="3">x3 (30%)</option>
+    <option value="5">x5 (15%)</option>
+  </select>
 
-      <div class="controls">
-        <label class="control-row">
-          <span>Multiplier</span>
-          <select id="multiplierSelect">
-            <option value="2">x2 (~50% win)</option>
-            <option value="3">x3 (~30% win)</option>
-            <option value="5">x5 (~15% win)</option>
-          </select>
-        </label>
+  <label for="bet">Bet (◎ SOL): <span id="betValue">0.025</span></label>
+  <input type="range" id="bet" min="0.025" max="3" step="0.025" value="0.025">
+  <button id="startBattle">Start Battle</button>
+  <button id="muteBtn">🔊 Mute</button>
+</section>
 
-        <label class="control-row">
-          <span>Bet (SOL): <strong id="betAmount">0.500</strong></span>
-          <input id="betSlider" type="range" min="0.025" max="3" step="0.025" value="0.5">
-        </label>
+<section class="battle-arena">
+  <div class="hero-container" id="playerHero"></div>
+  <div class="vs">VS</div>
+  <div class="hero-container" id="enemyHero"></div>
+</section>
 
-        <div class="control-row">
-          <button id="startBtn" class="neon-btn">Start Battle</button>
-        </div>
-      </div>
-    </section>
+<section class="battle-log">
+  <h2>Battle Log</h2>
+  <div id="log"></div>
+</section>
 
-    <section id="arenaWrapper" class="card hidden">
-      <div id="battleField" class="battle-field">
-        <div class="fighter" id="player">
-          <div class="heroImgContainer"><img id="playerImg" src="" alt="player"></div>
-          <div class="fighter-info">
-            <div class="name" id="playerName"></div>
-            <div class="hp-row">HP: <span id="playerHpValue">100</span></div>
-            <div class="hp-bar"><div id="playerHp" class="hp-fill"></div></div>
-            <div class="stats" id="playerStats"></div>
-          </div>
-        </div>
+<section class="history-leaderboard">
+  <h2>Battle History & Leaderboard</h2>
+  <div id="history"></div>
+  <div id="leaderboard"></div>
+</section>
+</main>
 
-        <div class="vs">VS</div>
-
-        <div class="fighter" id="enemy">
-          <div class="heroImgContainer"><img id="enemyImg" src="" alt="enemy"></div>
-          <div class="fighter-info">
-            <div class="name" id="enemyName"></div>
-            <div class="hp-row">HP: <span id="enemyHpValue">100</span></div>
-            <div class="hp-bar"><div id="enemyHp" class="hp-fill"></div></div>
-            <div class="stats" id="enemyStats"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="battleLogContainer" class="card hidden">
-      <h3>Battle Log</h3>
-      <div id="battleLog" class="battle-log"></div>
-    </section>
-  </main>
-
-  <!-- Result modal + confetti canvas -->
-  <div id="resultModal" class="modal hidden">
-    <div class="modal-box">
-      <h2 id="resultText"></h2>
-      <p id="resultDetail" style="margin-top:8px;"></p>
-      <div style="margin-top:12px;">
-        <button id="playAgainBtn" class="neon-btn alt">Play Again</button>
-      </div>
-    </div>
-    <canvas id="confettiCanvas"></canvas>
-    <div id="lossFlash" class="loss-flash hidden"></div>
+<footer>
+  <div class="socials">
+    <a href="https://x.com/MemeBattleArena?t=-12FlF825HL7cMaUmfoV_w&s=09" target="_blank">
+      <img src="images/x.png" alt="X">
+    </a>
+    <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank">
+      <img src="images/telegram.png" alt="Telegram">
+    </a>
   </div>
+</footer>
 
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
