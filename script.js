@@ -1,3 +1,20 @@
+// Элементы
+const playerSelect = document.getElementById('playerSelect');
+const startBtn = document.getElementById('startBtn');
+const playerNameEl = document.getElementById('playerName');
+const enemyNameEl = document.getElementById('enemyName');
+const playerImgEl = document.getElementById('playerImg');
+const enemyImgEl = document.getElementById('enemyImg');
+const playerHPBar = document.getElementById('playerHP');
+const enemyHPBar = document.getElementById('enemyHP');
+const battleField = document.getElementById('battleField');
+const battleLogContainer = document.getElementById('battleLogContainer');
+const battleLogEl = document.getElementById('battleLog');
+const resultModal = document.getElementById('resultModal');
+const resultText = document.getElementById('resultText');
+const playAgainBtn = document.getElementById('playAgainBtn');
+
+// Данные героев
 const heroesData = {
   Pepe: { img: 'images/pepe.png' },
   Doge: { img: 'images/doge.png' },
@@ -8,131 +25,64 @@ const heroesData = {
   Melania: { img: 'images/melania.png' }
 };
 
-const skills = ["Poison", "Heal", "Block", "Fury"];
-
-const playerSelect = document.getElementById('player-select');
-const startBtn = document.getElementById('start-battle');
-const playAgainBtn = document.getElementById('play-again');
-
-const battleField = document.getElementById('battle-field');
-const battleLogContainer = document.getElementById('battle-log-container');
-const resultModal = document.getElementById('result-modal');
-const resultText = document.getElementById('result-text');
-
-const playerNameEl = document.getElementById('player-name');
-const playerImgEl = document.getElementById('player-img');
-const playerHpEl = document.getElementById('player-hp');
-const playerHpBar = document.getElementById('player-hp-bar');
-const playerStatsEl = document.getElementById('player-stats');
-
-const enemyNameEl = document.getElementById('enemy-name');
-const enemyImgEl = document.getElementById('enemy-img');
-const enemyHpEl = document.getElementById('enemy-hp');
-const enemyHpBar = document.getElementById('enemy-hp-bar');
-const enemyStatsEl = document.getElementById('enemy-stats');
-
-const battleLogEl = document.getElementById('battle-log');
-
-let player = null;
-let enemy = null;
-let playerStats = {};
-let enemyStats = {};
-let log = [];
+let player, enemy;
+let playerStats = {}, enemyStats = {};
 let battleActive = false;
+let log = [];
 
-// Утилиты
-const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const randFloat = (min, max) => Math.random() * (max - min) + min;
+// Рандом число
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min) + min);
+}
 
-function generateStats(name) {
+// Генерация характеристик
+function generateStats(hero) {
   return {
-    name,
+    name: hero,
     hp: randInt(80, 120),
-    atk: randInt(15, 30),
+    atk: randInt(10, 25),
     def: randInt(5, 15),
-    critChance: randInt(5, 20),
-    critMult: randFloat(1.5, 2.0),
-    skill: skills[randInt(0, skills.length-1)],
-    skillTurns: 0,
+    skill: ['Poison', 'Heal', 'Block', 'Fury'][randInt(0,4)],
     poisonCounter: 0
   };
 }
 
-function getHpColor(stats) {
-  if(stats.skill === "Poison" && stats.poisonCounter>0) return "#ff4d4d";
-  if(stats.skill === "Heal") return "#66ff66";
-  if(stats.skill === "Block" && stats.skillTurns>0) return "#4da6ff";
-  if(stats.skill === "Fury" && stats.skillTurns>0) return "#ff9933";
-  return "green";
-}
-
+// Обновление UI
 function updateUI() {
   playerNameEl.textContent = playerStats.name;
-  playerImgEl.src = heroesData[playerStats.name].img;
-  playerHpEl.textContent = playerStats.hp;
-  playerHpBar.style.width = playerStats.hp + "%";
-  playerHpBar.style.background = getHpColor(playerStats);
-  playerStatsEl.textContent = `ATK:${playerStats.atk} DEF:${playerStats.def} CRIT:${playerStats.critChance}% ×${playerStats.critMult.toFixed(1)} SKILL:${playerStats.skill}`;
-
   enemyNameEl.textContent = enemyStats.name;
+  playerImgEl.src = heroesData[playerStats.name].img;
   enemyImgEl.src = heroesData[enemyStats.name].img;
-  enemyHpEl.textContent = enemyStats.hp;
-  enemyHpBar.style.width = enemyStats.hp + "%";
-  enemyHpBar.style.background = getHpColor(enemyStats);
-  enemyStatsEl.textContent = `ATK:${enemyStats.atk} DEF:${enemyStats.def} CRIT:${enemyStats.critChance}% ×${enemyStats.critMult.toFixed(1)} SKILL:${enemyStats.skill}`;
+  playerHPBar.style.width = playerStats.hp + '%';
+  enemyHPBar.style.width = enemyStats.hp + '%';
 }
 
-function logMessage(msg){
-  const li = document.createElement('li');
-  li.textContent = msg;
-  battleLogEl.appendChild(li);
+// Лог
+function logMessage(msg) {
+  log.push(msg);
+  battleLogEl.innerHTML = log.join('<br>');
   battleLogEl.scrollTop = battleLogEl.scrollHeight;
 }
 
-function applySkill(stats, target, isPlayer){
-  if(stats.skill === "Poison" && stats.poisonCounter>0){
-    const dmg = randInt(3,6);
-    target.hp = Math.max(target.hp - dmg, 0);
-    stats.poisonCounter--;
-    logMessage(`${stats.name} Poison наносит ${dmg} урона`);
-  }
-  if(stats.skill === "Block" && stats.skillTurns>0){
-    stats.skillTurns--;
-    if(stats.skillTurns===0) stats.def = Math.floor(stats.def/1.3);
-  }
-  if(stats.skill === "Fury" && stats.skillTurns>0){
-    stats.skillTurns--;
-    if(stats.skillTurns===0) stats.atk = Math.floor(stats.atk/1.2);
-  }
-}
-
-function attackTurn(attacker, defender, attackerImg, defenderImg){
-  applySkill(attacker, defender, attacker===playerStats);
-
+// Атака
+function attackTurn(attacker, defender, attackerImg, defenderImg) {
   let damage = Math.max(attacker.atk - defender.def, 1);
-  if(Math.random()*100<attacker.critChance) damage = Math.floor(damage*attacker.critMult);
+  defender.hp = Math.max(defender.hp - damage, 0);
 
-  if(attacker.skill==="Heal" && Math.random()<0.3){
-    const heal = randInt(8,15);
-    attacker.hp = Math.min(attacker.hp + heal, attacker===playerStats?playerStats.hp:enemyStats.hp);
-    logMessage(`${attacker.name} исцелился на ${heal} HP`);
-  }
-
-  defender.hp = Math.max(defender.hp - damage,0);
-
-  // анимация
-  defenderImg.style.transform = "translateX("+ (attacker===playerStats ? 10 : -10)+"px)";
+  // Анимация
+  defenderImg.style.transform = `translateX(${attacker===playerStats?10:-10}px)`;
   defenderImg.style.filter = "brightness(1.5)";
   setTimeout(()=>{ defenderImg.style.transform="translateX(0)"; defenderImg.style.filter="brightness(1)"; },300);
 
   logMessage(`${attacker.name} ударил ${defender.name} на ${damage}`);
 
-  // скиллы активные
+  // Скиллы
   if(attacker.skill==="Block") attacker.def = Math.floor(attacker.def*1.3);
   if(attacker.skill==="Fury") attacker.atk = Math.floor(attacker.atk*1.2);
   if(attacker.skill==="Poison") attacker.poisonCounter=3;
 }
 
+// Цикл боя
 function battleLoop(){
   if(!battleActive) return;
   if(playerStats.hp<=0 || enemyStats.hp<=0){
@@ -147,6 +97,7 @@ function battleLoop(){
   setTimeout(battleLoop,1000);
 }
 
+// Результат
 function showResultModal(){
   let result;
   if(playerStats.hp<=0 && enemyStats.hp<=0) result="Ничья 🤝";
@@ -156,12 +107,13 @@ function showResultModal(){
   resultModal.classList.remove('hidden');
 }
 
+// Старт боя
 startBtn.addEventListener('click',()=>{
   const selected=playerSelect.value;
   if(!selected) return alert("Выберите героя!");
   player=selected;
   const enemyOptions = Object.keys(heroesData).filter(h=>h!==player);
-  const enemyChoice = enemyOptions[randInt(0,enemyOptions.length-1)];
+  const enemyChoice = enemyOptions[randInt(0,enemyOptions.length)];
   enemy = enemyChoice;
 
   playerStats = generateStats(player);
@@ -179,7 +131,7 @@ startBtn.addEventListener('click',()=>{
 
   setTimeout(battleLoop,1000);
 
-  // максимум бой 30 секунд
+  // Максимум бой 30 секунд
   setTimeout(()=>{
     if(battleActive){
       battleActive=false;
@@ -188,6 +140,7 @@ startBtn.addEventListener('click',()=>{
   },30000);
 });
 
+// Кнопка играть снова
 playAgainBtn.addEventListener('click',()=>{
   player=null;
   enemy=null;
