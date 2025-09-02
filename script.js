@@ -67,15 +67,22 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
   for(let i=0;i<totalTicks;i++){
     await new Promise(r=>setTimeout(r,interval));
     let playerDamage=Math.floor(Math.random()*10+5), enemyDamage=Math.floor(Math.random()*10+5);
+
     if(Math.random()<0.15){playerDamage*=2; if(!muted)sounds.crit.play(); flashScreen("player"); }
     if(Math.random()<0.15){enemyDamage*=2; if(!muted)sounds.crit.play(); flashScreen("enemy"); }
+
+    if(!muted)sounds.attack.play();
+
     playerHP-=enemyDamage; enemyHP-=playerDamage;
     if(playerHP<0)playerHP=0; if(enemyHP<0)enemyHP=0;
+
     document.getElementById("playerHp").style.width=playerHP+"%";
     document.getElementById("playerHp").style.backgroundColor=`rgb(${255-(playerHP*2.55)},${playerHP*2.55},0)`;
     document.getElementById("enemyHp").style.width=enemyHP+"%";
     document.getElementById("enemyHp").style.backgroundColor=`rgb(${255-(enemyHP*2.55)},${enemyHP*2.55},0)`;
+
     logDiv.innerHTML+=`Player hits ${playerDamage}, Enemy hits ${enemyDamage}<br>`; logDiv.scrollTop=logDiv.scrollHeight;
+
     spawnBlood(playerHero.hp>playerHP?"enemy":"player");
   }
 
@@ -86,7 +93,7 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
 
   document.getElementById("balance").innerText=balance.toFixed(3);
   localStorage.setItem("balance",balance.toFixed(3));
-  updateHistory(result, bet*multiplier);
+  updateHistory(result, result==="draw"?0:bet*multiplier);
   logDiv.innerHTML+=`Battle ended: ${result.toUpperCase()}<br>`;
 });
 
