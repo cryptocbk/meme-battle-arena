@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meme Coin Battle Arena</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <h1>Meme Coin Battle Arena ⚔️</h1>
+
+    <div id="hero-selection">
+      <label>Выберите героя: </label>
+      <select id="player-select">
+        <option value="">--Выберите--</option>
+        <option value="Pepe">Pepe 🐸</option>
+        <option value="Doge">Doge 🐕</option>
+        <option value="Bonk">Bonk 🐶</option>
+        <option value="Penguin">Penguin 🐧</option>
+        <option value="Trump">Trump 🧑‍🦳</option>
+        <option value="Popcat">Popcat 😺</option>
+        <option value="Melania">Melania 👩</option>
+      </select>
+      <button id="start-battle">Сразиться</button>
+    </div>
+
+    <div id="battle-field" class="hidden">
+      <div class="hero-container">
+        <h2 id="player-name"></h2>
+        <img id="player-img" src="" alt="" class="hero-img">
+        <p>HP: <span id="player-hp"></span></p>
+        <div class="hp-bar">
+          <div id="player-hp-bar" class="hp-fill"></div>
+        </div>
+        <p id="player-stats"></p>
+      </div>
+
+      <div class="hero-container">
+        <h2 id="enemy-name"></h2>
+        <img id="enemy-img" src="" alt="" class="hero-img">
+        <p>HP: <span id="enemy-hp"></span></p>
+        <div class="hp-bar">
+          <div id="enemy-hp-bar" class="hp-fill"></div>
+        </div>
+        <p id="enemy-stats"></p>
+      </div>
+    </div>
+
+    <div id="battle-log-container" class="hidden">
+      <h3>Battle Log:</h3>
+      <ul id="battle-log"></ul>
+    </div>
+
+    <div id="result-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="result-text"></h2>
+        <button id="play-again">Играть снова</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
