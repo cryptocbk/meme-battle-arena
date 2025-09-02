@@ -1,53 +1,79 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meme Coin Battle Arena</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meme Coin Battle Arena</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Meme Coin Battle Arena</h1>
-    <div class="select-hero">
-      <label for="playerSelect">Выберите героя:</label>
-      <select id="playerSelect">
-        <option value="">--Выбрать--</option>
-        <option value="Pepe">Pepe</option>
-        <option value="Doge">Doge</option>
-        <option value="Bonk">Bonk</option>
-        <option value="Penguin">Penguin</option>
-        <option value="Trump">Trump</option>
-        <option value="Popcat">Popcat</option>
-        <option value="Melania">Melania</option>
-      </select>
-      <button id="startBtn">Сразиться</button>
-    </div>
+<div class="container">
+  <h1>Meme Coin Battle Arena</h1>
 
-    <div id="battleField" class="hidden">
-      <div class="hero">
-        <h3 id="playerName"></h3>
+  <div class="select-hero">
+    <label for="playerSelect">Choose your hero:</label>
+    <select id="playerSelect">
+      <option value="">--Select--</option>
+      <option value="Pepe">Pepe</option>
+      <option value="Doge">Doge</option>
+      <option value="Bonk">Bonk</option>
+      <option value="Penguin">Penguin</option>
+      <option value="Trump">Trump</option>
+      <option value="Popcat">Popcat</option>
+      <option value="Melania">Melania</option>
+    </select>
+
+    <label for="multiplierSelect">Bet multiplier:</label>
+    <select id="multiplierSelect">
+      <option value="2">x2 (~50% chance)</option>
+      <option value="3">x3 (~30% chance)</option>
+      <option value="5">x5 (~15% chance)</option>
+    </select>
+
+    <label for="betSlider">Bet amount (SOL): <span id="betAmount">0.5</span></label>
+    <input type="range" min="0.025" max="3" step="0.025" value="0.5" id="betSlider">
+
+    <p>Balance: <span id="solBalance">3.00</span> SOL</p>
+    <button id="startBtn" class="main-btn">Battle!</button>
+  </div>
+
+  <div id="resultModal" class="hidden">
+    <p id="resultText"></p>
+    <button id="playAgainBtn" class="main-btn">Play Again</button>
+  </div>
+
+  <div id="battleField" class="hidden">
+    <div class="hero">
+      <h3 id="playerName"></h3>
+      <div class="heroImgContainer">
         <img id="playerImg" src="" alt="Player">
-        <div class="hp-bar"><div id="playerHP" class="hp"></div></div>
       </div>
-      <div class="hero">
-        <h3 id="enemyName"></h3>
+      <p>HP: <span id="playerHPValue"></span></p>
+      <p>ATK: <span id="playerAtk"></span></p>
+      <p>DEF: <span id="playerDef"></span></p>
+      <p>Skill: <span id="playerSkill"></span></p>
+      <div class="hp-bar"><div id="playerHP" class="hp"></div></div>
+    </div>
+
+    <div class="hero">
+      <h3 id="enemyName"></h3>
+      <div class="heroImgContainer">
         <img id="enemyImg" src="" alt="Enemy">
-        <div class="hp-bar"><div id="enemyHP" class="hp"></div></div>
       </div>
-    </div>
-
-    <div id="battleLogContainer" class="hidden">
-      <h3>Лог боя:</h3>
-      <div id="battleLog"></div>
-    </div>
-
-    <div id="resultModal" class="hidden">
-      <p id="resultText"></p>
-      <button id="playAgainBtn">Играть снова</button>
+      <p>HP: <span id="enemyHPValue"></span></p>
+      <p>ATK: <span id="enemyAtk"></span></p>
+      <p>DEF: <span id="enemyDef"></span></p>
+      <p>Skill: <span id="enemySkill"></span></p>
+      <div class="hp-bar"><div id="enemyHP" class="hp"></div></div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div id="battleLogContainer" class="hidden">
+    <h3>Battle Log:</h3>
+    <div id="battleLog"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
