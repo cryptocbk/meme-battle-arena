@@ -60,7 +60,6 @@ let battleInProgress = false;
 
 /* =================== Utils =================== */
 function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
-function safePlay(a){ try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
 function playSoundOnce(name, vol=1.0){ try { const a = new Audio(`sounds/${name}.mp3`); a.volume = vol; a.play().catch(()=>{}); } catch(e){} }
 function logLine(txt){ logDiv.innerHTML += txt + "<br>"; logDiv.scrollTop = logDiv.scrollHeight; }
 function setCardsDisabled(disabled){ document.querySelectorAll(".hero-card").forEach(c => {
@@ -139,13 +138,13 @@ document.getElementById("startBattle").addEventListener("click", async () => {
   const bet = parseFloat(betSlider.value);
   if (balance < bet) { alert("Not enough balance!"); return; }
 
-  // If wallet integration not present:
+  // wallet integration must be present
   if (!window.myWallet) {
     alert("Wallet integration missing. Make sure wallet.js is loaded.");
     return;
   }
 
-  // Ensure user connected:
+  // ensure connection
   if (!window.solana || !window.solana.publicKey) {
     const ok = confirm("Wallet not connected. Connect now?");
     if (!ok) return;
@@ -153,19 +152,32 @@ document.getElementById("startBattle").addEventListener("click", async () => {
     if (!window.solana || !window.solana.publicKey) return;
   }
 
-  // Send bet to treasury (on devnet). Show a simple UI tip (alert) on success/fail.
+  // Send bet on-chain (devnet) and check result
+  let txRes;
   try {
-    // optional: show pending message
-    const pendingMsg = "Confirm the transaction in your wallet to send the bet.";
-    console.log(pendingMsg);
-    const sig = await window.myWallet.sendBet(bet); // <-- blockchain transfer
-    alert("Bet transaction confirmed: " + sig);
-    console.log("Bet tx confirmed:", sig);
-  } catch (err) {
-    console.error("Bet failed or cancelled", err);
-    alert("Bet failed or cancelled.");
+    txRes = await window.myWallet.sendBet(bet);
+  } catch (e) {
+    console.error('sendBet threw', e);
+    alert('Bet failed (exception). See console.');
     return;
   }
+  if (!txRes || !txRes.ok) {
+    console.error('Bet failed result', txRes);
+    if (txRes && txRes.code === 'USER_REJECTED') {
+      alert('Bet cancelled by user.');
+    } else if (txRes && txRes.code === 'INSUFFICIENT_FUNDS') {
+      alert('Not enough SOL in your wallet to place this bet.');
+    } else if (txRes && txRes.code === 'INVALID_TREASURY') {
+      alert('Treasury address misconfigured. Contact admin.');
+    } else {
+      alert('Bet failed: ' + (txRes && txRes.error ? txRes.error : 'unknown error (see console)'));
+    }
+    return;
+  }
+
+  // optionally show signature
+  console.log('Bet tx confirmed', txRes.signature);
+  alert('Bet confirmed: ' + txRes.signature);
 
   // START BATTLE (after bet confirmed)
   battleInProgress = true;
