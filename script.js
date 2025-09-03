@@ -22,9 +22,11 @@ const sounds = {
   crit: new Audio("sounds/crit.mp3"),
   win: new Audio("sounds/win.mp3"),
   lose: new Audio("sounds/lose.mp3"),
+  draw: new Audio("sounds/draw.mp3"),
   poison: new Audio("sounds/poison.mp3"),
   heal: new Audio("sounds/heal.mp3"),
-  bg: new Audio("sounds/bg.mp3")
+  bg: new Audio("sounds/bg.mp3"),
+  evil: new Audio("sounds/evil.mp3") // для поражения
 };
 sounds.bg.loop = true; sounds.bg.volume=0.3; sounds.bg.play();
 
@@ -61,6 +63,7 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
   document.getElementById("enemyHero").innerHTML=`<img src="${enemyHero.img}" alt="${enemyHero.name}"><div class="hp-bar"><div class="hp-fill" id="enemyHp"></div></div>`;
 
   const logDiv=document.getElementById("log"); logDiv.innerHTML="";
+  const overlay=document.getElementById("resultOverlay"); overlay.style.opacity=0; overlay.innerText="";
   let playerHP=playerHero.hp, enemyHP=enemyHero.hp;
   const duration=Math.random()*25+5, interval=500, totalTicks=Math.floor(duration*1000/interval);
 
@@ -82,14 +85,12 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
     document.getElementById("enemyHp").style.backgroundColor=`rgb(${255-(enemyHP*2.55)},${enemyHP*2.55},0)`;
 
     logDiv.innerHTML+=`Player hits ${playerDamage}, Enemy hits ${enemyDamage}<br>`; logDiv.scrollTop=logDiv.scrollHeight;
-
-    spawnBlood(playerHero.hp>playerHP?"enemy":"player");
   }
 
   let result="";
-  if(playerHP>enemyHP){result="win"; balance+=bet*multiplier; if(!muted)sounds.win.play(); showVictory();}
-  else if(playerHP<enemyHP){result="lose"; balance-=bet; if(!muted)sounds.lose.play(); showDefeat();}
-  else{result="draw"; /* bet returned */}
+  if(playerHP>enemyHP){result="win"; balance+=bet*multiplier; if(!muted)sounds.win.play(); showResult("win");}
+  else if(playerHP<enemyHP){result="lose"; balance-=bet; if(!muted){sounds.lose.play(); sounds.evil.play();} showResult("lose");}
+  else{result="draw"; if(!muted)sounds.draw.play(); showResult("draw");}
 
   document.getElementById("balance").innerText=balance.toFixed(3);
   localStorage.setItem("balance",balance.toFixed(3));
@@ -97,33 +98,33 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
   logDiv.innerHTML+=`Battle ended: ${result.toUpperCase()}<br>`;
 });
 
-// Flash screen
+// Flash screen for attack
 function flashScreen(type){
-  const overlay=document.createElement("div");
-  overlay.style.position="fixed"; overlay.style.top=0; overlay.style.left=0;
-  overlay.style.width="100%"; overlay.style.height="100%";
-  overlay.style.pointerEvents="none"; overlay.style.zIndex=9999;
-  overlay.style.backgroundColor = type==="player"?"rgba(0,255,0,0.3)":"rgba(255,0,0,0.3)";
-  document.body.appendChild(overlay);
-  setTimeout(()=>document.body.removeChild(overlay),100);
+  const overlay=document.getElementById("resultOverlay");
+  overlay.style.backgroundColor = type==="player"?"rgba(0,255,0,0.2)":"rgba(255,0,0,0.2)";
+  overlay.style.opacity=1;
+  setTimeout(()=>overlay.style.opacity=0,100);
 }
 
-// Blood effect
-function spawnBlood(target){
-  const blood=document.createElement("div");
-  blood.className="blood";
-  blood.style.position="absolute"; blood.style.width="10px"; blood.style.height="10px"; blood.style.background="red"; blood.style.borderRadius="50%";
-  const container = target==="player"?document.getElementById("playerHero"):document.getElementById("enemyHero");
-  blood.style.left=Math.random()*container.offsetWidth+"px";
-  blood.style.top=Math.random()*container.offsetHeight+"px";
-  container.appendChild(blood);
-  setTimeout(()=>container.removeChild(blood),500);
+// Show battle result
+function showResult(type){
+  const overlay=document.getElementById("resultOverlay");
+  if(type==="win"){
+    overlay.style.color="lime"; overlay.innerText="VICTORY!"; overlay.style.opacity=1;
+    createConfetti();
+    setTimeout(()=>overlay.style.opacity=0,1500);
+  }
+  if(type==="lose"){
+    overlay.style.color="red"; overlay.innerText="DEFEAT!"; overlay.style.opacity=1;
+    setTimeout(()=>overlay.style.opacity=0,1500);
+  }
+  if(type==="draw"){
+    overlay.style.color="cyan"; overlay.innerText="DRAW!"; overlay.style.opacity=1;
+    setTimeout(()=>overlay.style.opacity=0,1500);
+  }
 }
 
-// Victory / Defeat animations
-function showVictory(){ createConfetti(); }
-function showDefeat(){ flashScreen("enemy"); }
-
+// Confetti for victory
 function createConfetti(){
   for(let i=0;i<50;i++){
     const c=document.createElement("div"); c.className="confetti";
