@@ -1,4 +1,4 @@
-/* =================== Data =================== */
+/* =================== Data & Balance =================== */
 const heroesData = [
   { name: "Pepe",    img: "images/pepe.png" },
   { name: "Doge",    img: "images/doge.png" },
@@ -9,12 +9,8 @@ const heroesData = [
   { name: "Melania", img: "images/melania.png" },
 ];
 
-/* =================== Balance =================== */
 let balance = parseFloat(localStorage.getItem("balance"));
-if (isNaN(balance)) {
-  balance = 3.0;
-  localStorage.setItem("balance", balance.toFixed(3));
-}
+if (isNaN(balance)) { balance = 3.0; localStorage.setItem("balance", balance.toFixed(3)); }
 document.getElementById("balance").innerText = balance.toFixed(3);
 
 /* =================== Audio =================== */
@@ -27,25 +23,13 @@ const sounds = {
   bg:     new Audio("sounds/bg.mp3")
 };
 sounds.bg.loop = true;
-sounds.bg.volume = 0.35;
+sounds.bg.volume = 0.32;
 
-function safePlaySound(name, vol=1.0){
-  // create new audio instance each play to avoid mobile playback issues
-  try {
-    const src = `sounds/${name}.mp3`;
-    const a = new Audio(src);
-    a.volume = vol;
-    a.play().catch(()=>{});
-  } catch(e){}
-}
-
-// unlock bg on first interaction (mobile autoplay policy)
 let audioUnlocked = false;
 function unlockAudioOnce() {
   if (audioUnlocked) return;
   audioUnlocked = true;
   try { sounds.bg.play().catch(()=>{}); } catch(e){}
-  // prime short sounds by creating and pausing them
   ["select","attack","crit","win","lose"].forEach(k => {
     try { const a = new Audio(`sounds/${k}.mp3`); a.play().then(()=>a.pause()).catch(()=>{}); } catch(e){}
   });
@@ -62,13 +46,13 @@ const betValueSpan = document.getElementById("betValue");
 const logDiv = document.getElementById("log");
 const playerStatsBox = document.getElementById("playerStats");
 const enemyStatsBox  = document.getElementById("enemyStats");
+
 const modal = document.getElementById("resultModal");
 const modalContent = document.getElementById("modalContent");
 const titleEl = document.getElementById("resultTitle");
 const amountEl = document.getElementById("resultAmount");
 const effectContainer = document.getElementById("effectContainer");
 const tryAgainBtn = document.getElementById("tryAgain");
-const multiplierEl = document.getElementById("multiplier");
 
 let playerHero = null, enemyHero = null;
 let playerStats = null, enemyStats = null;
@@ -76,25 +60,24 @@ let battleInProgress = false;
 
 /* =================== Utils =================== */
 function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+function safePlay(a){ try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
+function playSoundOnce(name, vol=1.0){ try { const a = new Audio(`sounds/${name}.mp3`); a.volume = vol; a.play().catch(()=>{}); } catch(e){} }
 function logLine(txt){ logDiv.innerHTML += txt + "<br>"; logDiv.scrollTop = logDiv.scrollHeight; }
-function setCardsDisabled(disabled){
-  document.querySelectorAll(".hero-card").forEach(c => {
-    if (disabled) c.classList.add("disabled"); else c.classList.remove("disabled");
-  });
-}
+function setCardsDisabled(disabled){ document.querySelectorAll(".hero-card").forEach(c => {
+  if (disabled) c.classList.add("disabled"); else c.classList.remove("disabled");
+}); }
 
 /* =================== Stats roll & render =================== */
 function rollStats(){
   return {
-    atk:  Math.floor(15 + Math.random()*25),        // 15..40
-    def:  Math.floor(5 + Math.random()*20),         // 5..25
-    crit: 0.05 + Math.random()*0.25,                // 5%..30%
-    agi:  Math.floor(5 + Math.random()*20),         // 5..25
-    skill:Math.floor(1 + Math.random()*10)          // 1..10
+    atk:  Math.floor(15 + Math.random()*25),
+    def:  Math.floor(5 + Math.random()*20),
+    crit: 0.05 + Math.random()*0.25,
+    agi:  Math.floor(5 + Math.random()*20),
+    skill:Math.floor(1 + Math.random()*10)
   };
 }
 function renderStats(container, s){
-  // безопасная конвертация чисел/строк
   const atk   = String(s.atk);
   const def   = String(s.def);
   const crit  = (s.crit*100).toFixed(0) + "%";
@@ -110,7 +93,6 @@ function renderStats(container, s){
   `;
 }
 
-
 /* =================== Render heroes =================== */
 function createHeroCard(hero){
   const card = document.createElement("div");
@@ -118,9 +100,7 @@ function createHeroCard(hero){
   card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
   card.addEventListener("click", () => {
     if (battleInProgress) return;
-    // click sound always
-    safePlaySound('select', 0.75);
-    // set player hero fresh
+    playSoundOnce('select', 0.8);
     playerHero = { ...hero, hp: 100 };
     playerStats = rollStats();
     renderFighter("playerHero", playerHero);
@@ -131,7 +111,6 @@ function createHeroCard(hero){
 }
 heroesData.forEach(h => heroesDiv.appendChild(createHeroCard(h)));
 
-/* render fighter avatar + hp bar */
 function renderFighter(containerId, hero){
   const el = document.getElementById(containerId);
   el.innerHTML = `
@@ -143,7 +122,7 @@ function renderFighter(containerId, hero){
 /* =================== Bet UI =================== */
 betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
 
-/* =================== Win chance mapping =================== */
+/* =================== Win chance mapping (user requested) =================== */
 function getWinChanceForMultiplier(mult) {
   if (mult === 2) return 0.40;   // 40%
   if (mult === 3) return 0.15;   // 15%
@@ -151,17 +130,44 @@ function getWinChanceForMultiplier(mult) {
   return 0.40;
 }
 
-
-/* =================== Battle logic =================== */
+/* =================== Battle logic with wallet sendBet integration =================== */
 document.getElementById("startBattle").addEventListener("click", async () => {
   if (!playerHero) { alert("Choose a hero!"); return; }
   if (battleInProgress) return;
 
+  const multiplier = parseInt(document.getElementById("multiplier").value,10);
   const bet = parseFloat(betSlider.value);
-  const multiplier = parseInt(multiplierEl.value,10);
   if (balance < bet) { alert("Not enough balance!"); return; }
 
-  // lock selection
+  // If wallet integration not present:
+  if (!window.myWallet) {
+    alert("Wallet integration missing. Make sure wallet.js is loaded.");
+    return;
+  }
+
+  // Ensure user connected:
+  if (!window.solana || !window.solana.publicKey) {
+    const ok = confirm("Wallet not connected. Connect now?");
+    if (!ok) return;
+    await window.myWallet.connectWallet();
+    if (!window.solana || !window.solana.publicKey) return;
+  }
+
+  // Send bet to treasury (on devnet). Show a simple UI tip (alert) on success/fail.
+  try {
+    // optional: show pending message
+    const pendingMsg = "Confirm the transaction in your wallet to send the bet.";
+    console.log(pendingMsg);
+    const sig = await window.myWallet.sendBet(bet); // <-- blockchain transfer
+    alert("Bet transaction confirmed: " + sig);
+    console.log("Bet tx confirmed:", sig);
+  } catch (err) {
+    console.error("Bet failed or cancelled", err);
+    alert("Bet failed or cancelled.");
+    return;
+  }
+
+  // START BATTLE (after bet confirmed)
   battleInProgress = true;
   setCardsDisabled(true);
 
@@ -176,22 +182,22 @@ document.getElementById("startBattle").addEventListener("click", async () => {
   // decide biased outcome based on multiplier
   const winChance = getWinChanceForMultiplier(multiplier);
   const playerShouldWin = Math.random() < winChance;
+  console.log('winChance', winChance, 'playerShouldWin', playerShouldWin);
 
-  // fight loop: player hits then enemy hits until someone <=0
+  // fight loop
   while (playerHero.hp > 0 && enemyHero.hp > 0) {
     await sleep(650);
 
     // player attack
     let pdmg = rollDamage(playerStats, enemyStats);
-    // apply slight bias toward chosen outcome but keep randomness
     if (playerShouldWin) {
-      pdmg = Math.round(pdmg * (1 + (0.12 * Math.random()))); // boost player dmg by ~0..12%
+      pdmg = Math.round(pdmg * (1.4 + Math.random()*0.25));
     } else {
-      pdmg = Math.round(pdmg * (1 - (0.10 * Math.random()))); // reduce player dmg slightly
+      pdmg = Math.round(pdmg * (0.65 + Math.random()*0.15));
     }
-    if (Math.random() < playerStats.crit) { pdmg = Math.floor(pdmg * 1.8); safePlaySound('crit'); }
+    if (Math.random() < playerStats.crit) { pdmg = Math.floor(pdmg * 1.8); playSoundOnce('crit',0.8); }
     enemyHero.hp = Math.max(0, enemyHero.hp - pdmg);
-    safePlaySound('attack', 0.5);
+    playSoundOnce('attack',0.5);
     logLine(`You hit enemy for ${pdmg}`);
     updateHpBar("enemyHp", enemyHero.hp);
 
@@ -202,41 +208,39 @@ document.getElementById("startBattle").addEventListener("click", async () => {
     // enemy attack
     let edmg = rollDamage(enemyStats, playerStats);
     if (playerShouldWin) {
-      edmg = Math.round(edmg * (1 - (0.12 * Math.random()))); // reduce enemy dmg slightly
+      edmg = Math.round(edmg * (0.6 + Math.random()*0.2));
     } else {
-      edmg = Math.round(edmg * (1 + (0.12 * Math.random()))); // boost enemy dmg a bit
+      edmg = Math.round(edmg * (1.3 + Math.random()*0.3));
     }
-    if (Math.random() < enemyStats.crit) { edmg = Math.floor(edmg * 1.8); safePlaySound('crit'); }
+    if (Math.random() < enemyStats.crit) { edmg = Math.floor(edmg * 1.8); playSoundOnce('crit',0.8); }
     playerHero.hp = Math.max(0, playerHero.hp - edmg);
-    safePlaySound('attack', 0.5);
+    playSoundOnce('attack',0.5);
     logLine(`Enemy hits you for ${edmg}`);
     updateHpBar("playerHp", playerHero.hp);
   }
 
-  // calculate result
+  // result & balance update
   const win = playerHero.hp > enemyHero.hp;
   if (win) {
     const gain = bet * multiplier;
     balance += gain;
-    safePlaySound('win', 1.0);
+    playSoundOnce('win', 1.0);
     showResultModal({ type: "win", amount: gain });
   } else {
     balance -= bet;
-    safePlaySound('lose', 0.9);
+    playSoundOnce('lose', 0.9);
     showResultModal({ type: "lose", amount: bet });
   }
-
   localStorage.setItem("balance", balance.toFixed(3));
   document.getElementById("balance").innerText = balance.toFixed(3);
 
-  // don't re-enable cards here — require explicit Try Again to reselect
-  // marking battle finished, but keep cards disabled until user closes modal
+  // keep cards disabled until user presses Try Again (forces reselect)
   battleInProgress = false;
 });
 
 /* damage formula */
 function rollDamage(attacker, defender){
-  const base = 8 + Math.random()*12; // 8..20
+  const base = 8 + Math.random()*12;
   const atkBonus = attacker.atk * 0.6 + attacker.skill * 0.8;
   const defMit   = defender.def * 0.45 + defender.agi * 0.2;
   return Math.max(3, Math.round(base + atkBonus - defMit));
@@ -247,43 +251,31 @@ function updateHpBar(id, hp){
   const el = document.getElementById(id);
   if (!el) return;
   el.style.width = hp + "%";
-
   let r,g;
   if (hp > 50) {
-    const frac = (hp - 50) / 50; // 0..1
+    const frac = (hp - 50) / 50;
     r = Math.round(255 * (1 - frac));
     g = 200;
   } else {
-    const frac = hp / 50; // 0..1
-    r = Math.round(220 + (35 * frac)); // 220 -> 255
-    g = Math.round(0 + (200 * frac));  // 0 -> 200
+    const frac = hp / 50;
+    r = Math.round(220 + (35 * frac));
+    g = Math.round(0 + (200 * frac));
   }
   el.style.backgroundColor = `rgb(${r},${g},0)`;
 }
 
 /* =================== Modal / effects =================== */
 tryAgainBtn.addEventListener("click", () => {
-  // Close modal and *force* player to reselect hero for next fight
   modal.style.display = "none";
   effectContainer.innerHTML = "";
-
   // reset fighters so next battle requires selection
-  playerHero = null;
-  enemyHero = null;
-  playerStats = null;
-  enemyStats = null;
-
-  // clear fighter DOM and stats boxes
+  playerHero = null; enemyHero = null; playerStats = null; enemyStats = null;
   document.getElementById("playerHero").innerHTML = "";
   document.getElementById("enemyHero").innerHTML = "";
-  playerStatsBox.innerHTML = "";
-  enemyStatsBox.innerHTML = "";
-
-  // re-enable hero cards for new selection
+  playerStatsBox.innerHTML = ""; enemyStatsBox.innerHTML = "";
   setCardsDisabled(false);
 });
 
-/* spawn ribbons (ribbons) inside modal */
 function spawnRibbons(n=60){
   for (let i=0;i<n;i++){
     const el = document.createElement("div");
@@ -298,13 +290,11 @@ function spawnRibbons(n=60){
     setTimeout(()=>el.remove(), 5200);
   }
 }
-
-/* spawn skull emojis inside modal */
 function spawnSkulls(n=50){
   for (let i=0;i<n;i++){
     const el = document.createElement("div");
     el.className = "skull";
-    el.textContent = "💀"; // fallback visible emoji
+    el.textContent = "💀";
     el.style.left = Math.random()*100 + "%";
     el.style.fontSize = (12 + Math.random()*18) + "px";
     el.style.setProperty("--dx", (Math.random()*360 - 180) + "px");
@@ -314,25 +304,19 @@ function spawnSkulls(n=50){
     setTimeout(()=>el.remove(), 5200);
   }
 }
-
 function showResultModal({type, amount}){
   effectContainer.innerHTML = "";
   modalContent.classList.remove("win","lose");
   modalContent.classList.add(type==="win"?"win":"lose");
-
   if (type === "win"){
-    titleEl.style.color = "lime";
-    titleEl.textContent = "VICTORY!";
+    titleEl.style.color = "lime"; titleEl.textContent = "VICTORY!";
     amountEl.textContent = `+${amount.toFixed(3)} ◎ SOL`;
     spawnRibbons(70);
   } else {
-    titleEl.style.color = "red";
-    titleEl.textContent = "DEFEAT!";
+    titleEl.style.color = "red"; titleEl.textContent = "DEFEAT!";
     amountEl.textContent = `-${amount.toFixed(3)} ◎ SOL`;
     spawnSkulls(60);
   }
   modal.style.display = "flex";
-
-  // keep hero cards disabled until user presses Try Again (forces reselect)
   setCardsDisabled(true);
 }
