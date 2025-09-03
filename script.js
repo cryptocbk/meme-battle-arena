@@ -145,11 +145,12 @@ betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(be
 
 /* =================== Win chance mapping =================== */
 function getWinChanceForMultiplier(mult) {
-  if (mult === 2) return 0.5;
-  if (mult === 3) return 0.3;
-  if (mult === 5) return 0.15;
-  return 0.5;
+  if (mult === 2) return 0.40;   // 40%
+  if (mult === 3) return 0.15;   // 15%
+  if (mult === 5) return 0.05;   // 5%
+  return 0.40;
 }
+
 
 /* =================== Battle logic =================== */
 document.getElementById("startBattle").addEventListener("click", async () => {
