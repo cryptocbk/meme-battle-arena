@@ -1,295 +1,205 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // ===== DATA =====
   const heroesData = [
-    { name: "Pepe",    img: "images/pepe.png" },
-    { name: "Doge",    img: "images/doge.png" },
-    { name: "Bonk",    img: "images/bonk.png" },
+    { name: "Pepe", img: "images/pepe.png" },
+    { name: "Doge", img: "images/doge.png" },
+    { name: "Bonk", img: "images/bonk.png" },
     { name: "Penguin", img: "images/penguin.png" },
-    { name: "Trump",   img: "images/trump.png" },
-    { name: "Popcat",  img: "images/popcat.png" },
+    { name: "Trump", img: "images/trump.png" },
+    { name: "Popcat", img: "images/popcat.png" },
     { name: "Melania", img: "images/melania.png" },
   ];
 
-  // ===== STATE =====
   let balance = parseFloat(localStorage.getItem("balance")) || 3.0;
-  const balanceEl = document.getElementById("balance");
-  balanceEl.innerText = balance.toFixed(3);
+  document.getElementById("balance").innerText = balance.toFixed(3);
 
-  const heroesDiv     = document.getElementById("heroes");
-  const betSlider     = document.getElementById("bet");
-  const betValueSpan  = document.getElementById("betValue");
-  betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3);
-
+  const heroesDiv = document.getElementById("heroes");
   let playerHero = null;
-  let enemyHero  = null;
-  let inBattle   = false;
-  let audioReady = false;
+  let enemyHero = null;
+  let battleActive = false;
 
-  // ===== SIMPLE AUDIO (MP3 из папки sounds/) =====
-  // Храним пути + таблицу громкостей. Для воспроизведения создаём новый Audio.
-  const SFX = {
-    attack: "sounds/attack.mp3",
-    crit:   "sounds/crit.mp3",
-    win:    "sounds/win.mp3",
-    lose:   "sounds/lose.mp3",
-    bg:     "sounds/bg.mp3",
-  };
-  const VOL = {
-    attack: 0.5,
-    crit:   0.7,
-    win:    1.0,
-    lose:   0.9,
-    bg:     0.3,
+  // 🎵 Звуки
+  const sounds = {
+    attack: new Audio("sounds/attack.mp3"),
+    crit: new Audio("sounds/crit.mp3"),
+    win: new Audio("sounds/win.mp3"),
+    lose: new Audio("sounds/lose.mp3"),
+    bg: new Audio("sounds/bg.mp3"),
+    select: new Audio("sounds/select.mp3") // ✅ звук выбора героя
   };
 
-  const bg = new Audio(SFX.bg);
-  bg.loop = true;
-  bg.volume = VOL.bg;
+  // громкость
+  sounds.bg.loop = true; sounds.bg.volume = 0.3;
+  sounds.attack.volume = 0.5;
+  sounds.crit.volume = 0.7;
+  sounds.win.volume = 1.0;
+  sounds.lose.volume = 0.9;
+  sounds.select.volume = 0.6;
 
-  function unlockAudio() {
-    if (audioReady) return;
-    audioReady = true;
-    // запускаем фон
-    bg.play().catch(()=>{ /* может требоваться ещё один жест — не критично */ });
-    // прогреем короткие эффекты одним немым проигрыванием
-    ["attack","crit","win","lose"].forEach(k => {
-      try {
-        const a = new Audio(SFX[k]);
-        a.volume = 0.0;
-        a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(()=>{});
-      } catch {}
-    });
-  }
-  // любое первое взаимодействие
-  window.addEventListener("pointerdown", unlockAudio, { once: true });
-  window.addEventListener("keydown", unlockAudio, { once: true });
+  // Автозапуск музыки после первого клика
+  document.addEventListener("click", () => {
+    if (sounds.bg.paused) {
+      sounds.bg.play().catch(err => console.log("BG audio blocked:", err));
+    }
+  }, { once: true });
 
-  function playSFX(name) {
-    const src = SFX[name];
-    if (!src) return;
-    const a = new Audio(src);
-    a.volume = VOL[name] ?? 1.0;
-    a.play().catch(()=>{});
-    // авто-очистка (для мобильных не обязательно, но аккуратно)
-    setTimeout(() => { try { a.pause(); a.src=""; } catch {} }, 15000);
-  }
-
-  // ===== UI BUILD =====
-  betSlider.addEventListener("input", () => {
-    betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3);
-  });
-
+  // 🎴 Создание карточек героев
   heroesData.forEach(hero => {
     const card = document.createElement("div");
     card.className = "hero-card";
     card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
-    card.addEventListener("click", () => {
-      if (inBattle) return;              // нельзя менять героя в бою
-      playerHero = { ...hero, hp: 100 }; // 100 HP в начале
+    card.addEventListener("click", ()=>{
+      if (battleActive) return; // нельзя менять героя во время боя
+
+      // ✅ звук выбора героя
+      sounds.select.currentTime = 0;
+      sounds.select.play();
+
+      playerHero = {...hero, hp: 100};
       document.getElementById("playerHero").innerHTML = `
         <img src="${hero.img}" alt="${hero.name}">
-        <div class="hp-bar"><div class="hp-fill" id="playerHp" style="width:100%"></div></div>`;
+        <div class="hp-bar"><div class="hp-fill" id="playerHp"></div></div>`;
     });
     heroesDiv.appendChild(card);
   });
 
+  // 🆚 Выбор врага
   function getRandomEnemy() {
-    const h = heroesData[Math.floor(Math.random()*heroesData.length)];
-    return { ...h, hp: 100 };
+    return {...heroesData[Math.floor(Math.random() * heroesData.length)], hp: 100};
   }
 
-  // ===== BATTLE =====
-  document.getElementById("startBattle").addEventListener("click", startBattle);
+  // 🎮 Запуск боя
+  document.getElementById("startBattle").addEventListener("click", async()=>{
+    if (!playerHero){ alert("Choose a hero!"); return; }
+    if (battleActive) return;
 
-  function startBattle() {
-    unlockAudio(); // на всякий случай
-    if (!playerHero) { alert("Choose a hero!"); return; }
-    if (inBattle) return;
-    inBattle = true;
-
-    const multiplier = parseInt(document.getElementById("multiplier").value, 10);
-    const bet = parseFloat(betSlider.value);
-    if (balance < bet) { alert("Not enough balance!"); inBattle = false; return; }
+    battleActive = true;
+    const multiplier = parseInt(document.getElementById("multiplier").value);
+    let bet = parseFloat(document.getElementById("bet").value);
+    if(balance < bet){ alert("Not enough balance!"); battleActive=false; return; }
 
     enemyHero = getRandomEnemy();
     document.getElementById("enemyHero").innerHTML = `
       <img src="${enemyHero.img}" alt="${enemyHero.name}">
-      <div class="hp-bar"><div class="hp-fill" id="enemyHp" style="width:100%"></div></div>`;
+      <div class="hp-bar"><div class="hp-fill" id="enemyHp"></div></div>`;
 
     const logDiv = document.getElementById("log");
     logDiv.innerHTML = "";
 
-    let playerHP = 100;
-    let enemyHP  = 100;
+    let playerHP = playerHero.hp, enemyHP = enemyHero.hp;
 
-    // «Жеребьёвка» исхода под шансы множителя (x2 50%, x3 30%, x5 15%)
+    // Шанс победы по множителю
     let winChance = 0.5;
     if (multiplier === 3) winChance = 0.3;
     if (multiplier === 5) winChance = 0.15;
-    const playerShouldWin = Math.random() < winChance;
 
-    // Пошаговый бой — слегка подталкиваем исход в нужную сторону
-    const step = async () => {
-      if (playerHP <= 0 || enemyHP <= 0) { finish(); return; }
+    // Бой
+    while(playerHP > 0 && enemyHP > 0){
+      await new Promise(r => setTimeout(r, 500));
 
-      await new Promise(r => setTimeout(r, 450 + Math.random()*150));
+      let playerDamage = Math.floor(Math.random()*10 + 5);
+      let enemyDamage = Math.floor(Math.random()*10 + 5);
 
-      // базовый урон
-      let playerDamage = 5 + Math.floor(Math.random()*10); // урон по врагу
-      let enemyDamage  = 5 + Math.floor(Math.random()*10); // урон по игроку
+      if(Math.random()<0.15){ playerDamage *= 2; sounds.crit.play(); flashScreen("player"); }
+      if(Math.random()<0.15){ enemyDamage *= 2; sounds.crit.play(); flashScreen("enemy"); }
 
-      // крит 15%
-      if (Math.random() < 0.15) { playerDamage *= 2; playSFX("crit"); }
-      if (Math.random() < 0.15) { enemyDamage  *= 2; playSFX("crit"); }
+      sounds.attack.play();
 
-      // небольшой перекос для «заданного» исхода (не грубый, чтобы бой выглядел честно)
-      if (playerShouldWin) {
-        playerDamage = Math.round(playerDamage * 1.2);
-        enemyDamage  = Math.max(1, Math.round(enemyDamage * 0.85));
-      } else {
-        playerDamage = Math.max(1, Math.round(playerDamage * 0.85));
-        enemyDamage  = Math.round(enemyDamage * 1.2);
-      }
+      playerHP -= enemyDamage; 
+      enemyHP -= playerDamage;
 
-      // звук удара (после возможного крита)
-      setTimeout(() => playSFX("attack"), 30);
+      if(playerHP < 0) playerHP = 0; 
+      if(enemyHP < 0) enemyHP = 0;
 
-      // наносим урон синхронно
-      playerHP = Math.max(0, playerHP - enemyDamage);
-      enemyHP  = Math.max(0, enemyHP  - playerDamage);
-
-      updateHP("playerHp", playerHP);
-      updateHP("enemyHp",  enemyHP);
+      updateHpBar("playerHp", playerHP);
+      updateHpBar("enemyHp", enemyHP);
 
       logDiv.innerHTML += `Player hits ${playerDamage}, Enemy hits ${enemyDamage}<br>`;
       logDiv.scrollTop = logDiv.scrollHeight;
-
-      step();
-    };
-
-    step();
-
-    function finish() {
-      // конец боя — победитель совпадает с «жребием»
-      const playerWon = playerShouldWin;
-
-      if (playerWon) {
-        balance += bet * multiplier;
-        playSFX("win");
-        showResult("VICTORY!", `+${(bet*multiplier).toFixed(3)} ◎ SOL`, true);
-      } else {
-        balance -= bet;
-        playSFX("lose");
-        showResult("DEFEAT!", `-${bet.toFixed(3)} ◎ SOL`, false);
-      }
-
-      balanceEl.innerText = balance.toFixed(3);
-      localStorage.setItem("balance", balance.toFixed(3));
-      inBattle = false;
     }
-  }
 
-  // ===== HP BAR =====
-  // Цвет: >50% — зелёный->жёлтый; <=50% — жёлтый->красный
-  function updateHP(id, hp) {
+    // Итог
+    let didWin = Math.random() < winChance;
+    if (didWin){ balance += bet*multiplier; sounds.win.play(); showResult("win", bet*multiplier); }
+    else { balance -= bet; sounds.lose.play(); showResult("lose", bet); }
+
+    document.getElementById("balance").innerText = balance.toFixed(3);
+    localStorage.setItem("balance", balance.toFixed(3));
+    battleActive = false;
+  });
+
+  // ⚡ ХП бар
+  function updateHpBar(id, hp){
     const el = document.getElementById(id);
-    if (!el) return;
+    if(!el) return;
     el.style.width = hp + "%";
 
-    let r, g;
-    if (hp > 50) {
-      const t = (100 - hp) / 50; // 0..1
-      r = Math.round(255 * t);
-      g = 255;
-    } else {
-      const t = hp / 50;         // 1..0
-      r = 255;
-      g = Math.round(255 * t);
-    }
-    el.style.backgroundColor = `rgb(${r},${g},0)`;
+    // постепенное краснение
+    if(hp > 50) el.style.backgroundColor = "green";
+    else if(hp > 20) el.style.backgroundColor = "orange";
+    else el.style.backgroundColor = "red";
   }
 
-  // ===== RESULT MODAL + EFFECTS =====
-  const modal        = document.getElementById("resultModal");
-  const effects      = document.getElementById("effectsContainer");
-  const titleEl      = document.getElementById("resultTitle");
-  const amountEl     = document.getElementById("resultAmount");
-  const closeBtn     = document.getElementById("closeModal");
+  // Эффект удара
+  function flashScreen(type){
+    const overlay = document.getElementById("resultOverlay");
+    overlay.style.backgroundColor = type==="player" ? "rgba(0,255,0,0.2)" : "rgba(255,0,0,0.2)";
+    overlay.style.opacity = 1;
+    setTimeout(()=>overlay.style.opacity=0,100);
+  }
 
-  function showResult(title, amount, victory) {
-    titleEl.textContent  = title;
-    titleEl.style.color  = victory ? "lime" : "red";
-    amountEl.textContent = amount;
-
-    modal.classList.remove("victory","defeat","show");
-    modal.classList.add(victory ? "victory" : "defeat", "show");
-    modal.setAttribute("aria-hidden", "false");
-
+  // 🏆 Результат
+  function showResult(type, amount){
+    const modal = document.getElementById("resultModal");
+    const title = document.getElementById("resultTitle");
+    const amountEl = document.getElementById("resultAmount");
+    const effects = document.getElementById("effectsContainer");
     effects.innerHTML = "";
-    if (victory) {
-      createConfetti(effects, 110, 2400, 4200);
-      launchFireworks(effects, 6);
+
+    if(type==="win"){
+      title.innerText = "VICTORY!";
+      title.style.color = "lime";
+      amountEl.innerText = `+${amount.toFixed(3)} ◎ SOL`;
+      createConfetti(effects);
     } else {
-      createSkulls(effects, 80, 2400, 4200);
+      title.innerText = "DEFEAT!";
+      title.style.color = "red";
+      amountEl.innerText = `-${amount.toFixed(3)} ◎ SOL`;
+      createSkulls(effects);
+    }
+
+    modal.style.display = "flex";
+  }
+
+  // Конфетти 🎉
+  function createConfetti(container){
+    for(let i=0; i<80; i++){
+      const c = document.createElement("div");
+      c.className="confetti";
+      c.style.left = Math.random()*100 + "%";
+      c.style.backgroundColor = `hsl(${Math.random()*360},100%,50%)`;
+      c.style.width = c.style.height = Math.random()*8+4 + "px";
+      c.style.animationDuration = (Math.random()*3+3) + "s";
+      container.appendChild(c);
+      setTimeout(()=>c.remove(), 6000);
     }
   }
 
-  function hideModal() {
-    modal.classList.remove("show","victory","defeat");
-    modal.setAttribute("aria-hidden", "true");
-    effects.innerHTML = "";
-  }
-
-  closeBtn.addEventListener("click", hideModal);
-  modal.addEventListener("click", (e) => { if (e.target === modal) hideModal(); });
-  window.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.classList.contains("show")) hideModal(); });
-
-  // ===== EFFECTS HELPERS =====
-  function createConfetti(container, count = 80, minDur = 2000, maxDur = 4000) {
-    for (let i = 0; i < count; i++) {
-      const delay = Math.random() * 1500;
-      setTimeout(() => {
-        const c = document.createElement("div");
-        c.className = "confetti";
-        c.style.left = Math.random() * 100 + "%";
-        c.style.width = c.style.height = (Math.random() * 8 + 4) + "px";
-        c.style.backgroundColor = `hsl(${Math.random()*360},100%,55%)`;
-        c.style.animationDuration = (Math.random() * (maxDur - minDur) + minDur) + "ms";
-        container.appendChild(c);
-        setTimeout(() => c.remove(), maxDur + 1200);
-      }, delay);
+  // Черепа 💀
+  function createSkulls(container){
+    for(let i=0; i<50; i++){
+      const skull = document.createElement("div");
+      skull.className="skull";
+      skull.innerText="💀";
+      skull.style.left = Math.random()*100 + "%";
+      skull.style.fontSize = (Math.random()*20+20) + "px";
+      skull.style.animationDuration = (Math.random()*3+3) + "s";
+      container.appendChild(skull);
+      setTimeout(()=>skull.remove(), 6000);
     }
   }
 
-  function createSkulls(container, count = 50, minDur = 2000, maxDur = 4000) {
-    for (let i = 0; i < count; i++) {
-      const delay = Math.random() * 1500;
-      setTimeout(() => {
-        const s = document.createElement("div");
-        s.className = "skull";
-        s.textContent = "💀";
-        s.style.left = Math.random() * 100 + "%";
-        s.style.fontSize = (Math.random() * 18 + 22) + "px";
-        s.style.animationDuration = (Math.random() * (maxDur - minDur) + minDur) + "ms";
-        container.appendChild(s);
-        setTimeout(() => s.remove(), maxDur + 1200);
-      }, delay);
-    }
-  }
-
-  function launchFireworks(container, bursts = 5) {
-    for (let i = 0; i < bursts; i++) {
-      const delay = Math.random() * 1200;
-      setTimeout(() => {
-        const f = document.createElement("div");
-        f.className = "firework";
-        f.style.left = (15 + Math.random() * 70) + "%";
-        f.style.top  = (20 + Math.random() * 60) + "%";
-        const hue = Math.floor(Math.random()*360);
-        f.style.borderColor = `hsl(${hue},100%,60%)`;
-        container.appendChild(f);
-        setTimeout(() => f.remove(), 1400);
-      }, delay);
-    }
-  }
+  // Закрытие модалки
+  document.getElementById("closeModal").addEventListener("click", ()=>{
+    document.getElementById("resultModal").style.display="none";
+  });
 });
