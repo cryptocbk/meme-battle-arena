@@ -1,13 +1,14 @@
 // wallet.js
-// Uses global solanaWeb3 from CDN (index.iife.js)
+// Requires solanaWeb3 (index.iife.js) included in index.html head
 
 const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('devnet'), 'confirmed');
 
 const connectBtn = document.getElementById('connectWalletBtn');
 const addrSpan   = document.getElementById('walletAddress');
 const balSpan    = document.getElementById('walletBalance');
+const testBtn    = document.getElementById('testSendBtn');
 
-// <-- REPLACE this with the devnet address that will receive bets (treasury) -->
+// <-- Replace with the devnet address that will receive bets (treasury) -->
 const TREASURY_ADDRESS = "KUri8T4UV7J5AtXg9hLnyiBPm4zFm44Zk5usdDfCrXU";
 
 async function connectWallet() {
@@ -43,11 +44,44 @@ async function refreshBalance() {
   }
 }
 
-// send bet: transfer SOL from player to treasury (returns signature)
+/**
+ * sendBet(solAmount)
+ * - attempts to send SOL from connected wallet to TREASURY_ADDRESS
+ * - returns an object:
+ *    { ok: true, signature: "..." } on success
+ *    { ok: false, code: "...", error: "..." } on failure
+ */
 async function sendBet(solAmount) {
-  if (!window.solana || !window.solana.publicKey) throw new Error('Wallet not connected');
+  if (!window.solana || !window.solana.publicKey) {
+    const errMsg = 'Wallet not connected';
+    console.error(errMsg);
+    return { ok: false, error: errMsg, code: 'WALLET_NOT_CONNECTED' };
+  }
+
+  // validate treasury
+  let toPubkey;
+  try {
+    toPubkey = new solanaWeb3.PublicKey(TREASURY_ADDRESS);
+  } catch (e) {
+    console.error('Invalid TREASURY_ADDRESS', e);
+    return { ok: false, error: 'Invalid treasury address', code: 'INVALID_TREASURY' };
+  }
+
+  // check player's on-chain balance first
+  try {
+    const lamports = await connection.getBalance(window.solana.publicKey);
+    const solBal = lamports / solanaWeb3.LAMPORTS_PER_SOL;
+    if (solBal < solAmount + 0.0001) { // margin for fee
+      const errMsg = `Insufficient on-chain balance: have ${solBal.toFixed(6)} SOL, need ${solAmount.toFixed(6)} SOL`;
+      console.error(errMsg);
+      return { ok: false, error: errMsg, code: 'INSUFFICIENT_FUNDS' };
+    }
+  } catch (e) {
+    console.warn('Could not read on-chain balance', e);
+    // continue — not fatal
+  }
+
   const fromPubkey = window.solana.publicKey;
-  const toPubkey = new solanaWeb3.PublicKey(TREASURY_ADDRESS);
   const lamports = Math.round(solAmount * solanaWeb3.LAMPORTS_PER_SOL);
 
   const tx = new solanaWeb3.Transaction().add(
@@ -58,31 +92,44 @@ async function sendBet(solAmount) {
     })
   );
   tx.feePayer = fromPubkey;
-  const latest = await connection.getLatestBlockhash();
-  tx.recentBlockhash = latest.blockhash;
+  try {
+    const latest = await connection.getLatestBlockhash();
+    tx.recentBlockhash = latest.blockhash;
+  } catch (e) {
+    console.error('Failed to fetch recent blockhash', e);
+    return { ok: false, error: 'Network error fetching blockhash', code: 'BLOCKHASH_ERROR' };
+  }
 
   try {
+    // modern Phantom API
     if (window.solana.signAndSendTransaction) {
       const signed = await window.solana.signAndSendTransaction(tx);
-      // wait for confirmation
       await connection.confirmTransaction(signed.signature, 'confirmed');
+      console.log('Transaction confirmed:', signed.signature);
       await refreshBalance();
-      return signed.signature;
+      return { ok: true, signature: signed.signature };
     } else {
+      // fallback flow
       const signedTx = await window.solana.signTransaction(tx);
       const raw = signedTx.serialize();
       const sig = await connection.sendRawTransaction(raw);
       await connection.confirmTransaction(sig, 'confirmed');
+      console.log('Transaction confirmed (raw):', sig);
       await refreshBalance();
-      return sig;
+      return { ok: true, signature: sig };
     }
   } catch (err) {
-    console.error('sendBet error', err);
-    throw err;
+    console.error('sendBet failed:', err);
+    const message = (err && err.message) ? err.message : String(err);
+    const code = (err && err.code) ? err.code : 'TX_FAILED';
+    if (message.toLowerCase().includes('user rejected') || code === 4001 || message.toLowerCase().includes('cancel')) {
+      return { ok: false, error: 'User rejected the transaction', code: 'USER_REJECTED' };
+    }
+    return { ok: false, error: message, code };
   }
 }
 
-// Expose global API for script.js
+// expose API
 window.myWallet = {
   connectWallet,
   refreshBalance,
@@ -90,22 +137,21 @@ window.myWallet = {
   TREASURY_ADDRESS
 };
 
-// auto-bind UI
+// bind UI
 if (connectBtn) connectBtn.addEventListener('click', connectWallet);
-// temporary test button handler
-const testBtn = document.getElementById('testSendBtn');
 if (testBtn) {
   testBtn.addEventListener('click', async () => {
     try {
       if (!window.solana || !window.solana.publicKey) {
-        await window.myWallet.connectWallet();
+        await connectWallet();
+        if (!window.solana || !window.solana.publicKey) return;
       }
-      const res = await window.myWallet.sendBet(0.01);
-      alert('sendBet result: ' + JSON.stringify(res));
-      console.log('sendBet result:', res);
+      const res = await sendBet(0.01);
+      console.log('test sendBet result', res);
+      alert('test send result: ' + JSON.stringify(res));
     } catch (e) {
-      console.error(e);
-      alert('sendBet threw: ' + (e && e.message ? e.message : e));
+      console.error('test send threw', e);
+      alert('test send threw: ' + (e && e.message ? e.message : e));
     }
   });
 }
