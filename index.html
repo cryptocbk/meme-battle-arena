@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Meme Coin Battle Arena</title>
   <link rel="stylesheet" href="style.css"/>
@@ -34,6 +34,9 @@
     </section>
 
     <section class="battle-arena">
+      <!-- вспышки ударов -->
+      <div class="result-overlay" id="resultOverlay"></div>
+
       <div class="hero-container" id="playerHero"></div>
       <div class="vs">VS</div>
       <div class="hero-container" id="enemyHero"></div>
@@ -45,7 +48,7 @@
     </section>
   </main>
 
-  <!-- Результат боя: модальное окно -->
+  <!-- Модальное окно результата -->
   <div id="resultModal" class="modal" aria-hidden="true">
     <div class="modal-content" id="modalContent">
       <h2 id="resultTitle"></h2>
