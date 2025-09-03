@@ -1,116 +1,92 @@
 /* === Base === */
-body {
-  margin: 0;
-  font-family: 'Orbitron', sans-serif;
-  background: radial-gradient(circle, #0f0f0f, #1a1a1a);
-  color: #fff;
-  text-align: center;
-  overflow-x: hidden;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Orbitron',sans-serif;
+  background:radial-gradient(circle,#0f0f0f,#1a1a1a);
+  color:#fff;
+  text-align:center;
+  overflow-x:hidden;
 }
-h1 {
-  font-family: 'Bangers', cursive;
-  color: #00ffea;
-  text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+h1{
+  font-family:'Bangers',cursive;
+  color:#00ffea;
+  text-shadow:0 0 10px #0ff,0 0 20px #0ff;
 }
 
 /* === Heroes === */
-.hero-grid {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px;
+.hero-grid{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:15px;
+  margin:16px 0;
 }
-.hero-card {
-  border: 2px solid #0ff; border-radius: 10px; padding: 5px; cursor: pointer;
-  transition: transform .2s, box-shadow .2s, opacity .2s;
-  width: 100px; background: #111;
+.hero-card{
+  border:2px solid #0ff;
+  border-radius:10px;
+  padding:6px;
+  cursor:pointer;
+  transition:transform .18s,box-shadow .18s,opacity .18s;
+  width:100px;
+  background:#111;
+  text-align:center;
 }
-.hero-card:hover { transform: scale(1.08); box-shadow: 0 0 15px #0ff; }
-.hero-card img { width: 100%; border-radius: 10px; object-fit: cover; }
-.hero-card.disabled { pointer-events: none; opacity: .5; }
+.hero-card img{width:100%;border-radius:8px;object-fit:cover}
+.hero-card.disabled{pointer-events:none;opacity:.45}
+.hero-card div{margin-top:6px}
 
 /* === Arena === */
-.battle-arena {
-  display: flex; justify-content: center; align-items: flex-end;
-  margin: 20px 0; position: relative; height: 220px;
+.battle-arena{
+  display:flex;justify-content:center;align-items:flex-end;margin:18px 0;position:relative;height:220px;
 }
-.hero-container { width: 150px; height: 150px; display:flex; flex-direction:column; align-items:center; }
-.hero-container img { width: 120px; height: 120px; object-fit: contain; }
-.vs {
-  font-family: 'Bangers', cursive; font-size: 48px; margin: 0 20px; color: #ff00ff;
-  text-shadow: 0 0 10px #ff0, 0 0 20px #f0f;
-}
+.hero-container{width:150px;height:150px;display:flex;flex-direction:column;align-items:center}
+.hero-container img{width:120px;height:120px;object-fit:contain}
+.vs{font-family:'Bangers',cursive;font-size:48px;margin:0 20px;color:#ff00ff;text-shadow:0 0 10px #ff0,0 0 20px #f0f}
 
 /* === HP === */
-.hp-bar {
-  width: 100%; height: 12px; background: #fff; border-radius: 5px; margin-top: 5px; overflow: hidden;
-}
-.hp-fill {
-  height: 100%; width: 100%;
-  background: rgb(0,200,0);
-  transition: width .25s ease, background-color .25s ease;
-  border-radius: 5px;
-}
+.hp-bar{width:100%;height:12px;background:#fff;border-radius:6px;margin-top:6px;overflow:hidden}
+.hp-fill{height:100%;width:100%;background:rgb(0,200,0);transition:width .25s linear, background-color .25s linear;border-radius:6px}
 
 /* === Stats === */
-.stats {
-  display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
-  gap: 12px; padding: 0 12px; max-width: 800px; margin: 10px auto 0;
-}
-.stat-card {
-  background: rgba(0,0,0,.5); border: 1px solid #0ff; border-radius: 12px; padding: 10px;
-}
-.stat-card h3 { margin: 0 0 6px 0; color: #0ff; }
-.stat-list { font-size: 14px; text-align: left; line-height: 1.4; }
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:0 12px;max-width:900px;margin:10px auto 0}
+.stat-card{background:rgba(0,0,0,.45);border:1px solid #0ff;border-radius:12px;padding:10px}
+.stat-card h3{margin:0 0 6px;color:#0ff}
+.stat-list{font-size:14px;text-align:left;line-height:1.4}
 
 /* === Log === */
-.battle-log {
-  background: rgba(0, 0, 0, 0.6);
-  margin: 20px auto; padding: 10px; width: 90%; max-width: 700px;
-  border-radius: 10px; height: 160px; overflow-y: auto;
-}
+.battle-log{background:rgba(0,0,0,.6);margin:20px auto;padding:10px;width:90%;max-width:700px;border-radius:10px;height:160px;overflow-y:auto}
 
 /* === Buttons === */
-button {
-  padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer;
-  border: none; border-radius: 8px;
-  background: linear-gradient(45deg, #0ff, #f0f, #0ff);
-  color: #000; font-weight: bold; text-shadow: 0 0 5px #fff;
-  transition: transform .2s, box-shadow .2s;
-}
-button:hover { transform: scale(1.08); box-shadow: 0 0 15px #0ff; }
+button{padding:10px 20px;font-size:16px;margin:5px;cursor:pointer;border:none;border-radius:8px;background:linear-gradient(45deg,#0ff,#f0f,#0ff);color:#000;font-weight:700;text-shadow:0 0 5px #fff;transition:transform .15s}
+button:hover{transform:scale(1.05);box-shadow:0 0 12px #0ff}
+
+/* === Footer socials fix === */
+footer{margin:18px 0}
+.socials{display:flex;justify-content:center;gap:12px;align-items:center}
+.socials img{width:40px;height:40px;object-fit:contain;display:block}
 
 /* === Modal === */
-.modal {
-  display: none; position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,.8);
-  justify-content: center; align-items: center;
-}
-.modal-content {
-  position: relative; overflow: hidden;
-  background: #111; border: 2px solid #0ff; border-radius: 16px;
-  width: 86%; max-width: 420px; padding: 20px; text-align: center;
-  box-shadow: 0 0 25px rgba(0,255,255,.25);
-}
-.modal-content.win { box-shadow: 0 0 30px rgba(0,255,128,.5); }
-.modal-content.lose{ box-shadow: 0 0 30px rgba(255,64,64,.5); }
+.modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);justify-content:center;align-items:center}
+.modal[aria-hidden="false"]{display:flex}
+.modal-content{position:relative;overflow:hidden;background:#111;border:2px solid #0ff;border-radius:14px;width:86%;max-width:460px;padding:18px;text-align:center;box-shadow:0 0 30px rgba(0,255,255,.14)}
+.modal-content.win{box-shadow:0 0 40px rgba(0,255,128,.45)}
+.modal-content.lose{box-shadow:0 0 40px rgba(255,64,64,.45)}
 
-#effectContainer {
-  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
-}
+#effectContainer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 
-/* === Effects (ribbons & skulls) inside modal === */
-.ribbon, .skull {
-  position: absolute; top: -24px; opacity: .95; will-change: transform, opacity;
-  animation: fall-drift var(--t,3.4s) linear forwards;
+/* === Ribbon & skull effects (inside modal) === */
+.ribbon,.skull{
+  position:absolute;
+  top:-32px;
+  opacity:.98;
+  will-change:transform,opacity;
+  animation: fall-drift var(--t,3.6s) linear forwards;
+  transform-origin:center;
 }
-.ribbon {
-  width: 6px; height: 22px; border-radius: 3px;
-  /* Цвет задаётся инлайном через style.background */
-}
-.skull {
-  width: 20px; height: 20px;
-  background: url("images/skull.png") no-repeat center/contain;
-}
-
-@keyframes fall-drift {
-  0%   { transform: translate(0, -30px) rotate(0deg);   opacity: 1; }
-  100% { transform: translate(var(--dx, 0px), 420px) rotate(var(--rot,720deg)); opacity: 0; }
+.ribbon{width:8px;height:28px;border-radius:3px}
+.skull{width:22px;height:22px;font-size:20px;display:flex;align-items:center;justify-content:center}
+@keyframes fall-drift{
+  0%{transform:translate(0,-30px) rotate(0deg);opacity:1}
+  100%{transform:translate(var(--dx,0px),420px) rotate(var(--rot,720deg));opacity:0}
 }
