@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>Meme Coin Battle Arena</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
@@ -39,15 +39,27 @@
       <div class="hero-container" id="enemyHero"></div>
     </section>
 
+    <!-- Характеристики под ареной -->
+    <section class="stats">
+      <div class="stat-card">
+        <h3>Игрок</h3>
+        <div id="playerStats" class="stat-list"></div>
+      </div>
+      <div class="stat-card">
+        <h3>Противник</h3>
+        <div id="enemyStats" class="stat-list"></div>
+      </div>
+    </section>
+
     <section class="battle-log">
       <h2>Battle Log</h2>
       <div id="log"></div>
     </section>
   </main>
 
-  <!-- Модальное окно результата -->
+  <!-- МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТА -->
   <div id="resultModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" id="modalContent">
       <h2 id="resultTitle"></h2>
       <p id="resultAmount"></p>
       <div id="effectContainer"></div>
@@ -57,12 +69,8 @@
 
   <footer>
     <div class="socials">
-      <a href="https://x.com/MemeBattleArena?t=-12FlF825HL7cMaUmfoV_w&s=09" target="_blank">
-        <img src="images/x.png" alt="X">
-      </a>
-      <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank">
-        <img src="images/telegram.png" alt="Telegram">
-      </a>
+      <a href="https://x.com/MemeBattleArena" target="_blank"><img src="images/x.png" alt="X"></a>
+      <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank"><img src="images/telegram.png" alt="Telegram"></a>
     </div>
   </footer>
 
