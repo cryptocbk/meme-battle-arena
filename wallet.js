@@ -8,7 +8,7 @@ const addrSpan   = document.getElementById('walletAddress');
 const balSpan    = document.getElementById('walletBalance');
 
 // <-- REPLACE this with the devnet address that will receive bets (treasury) -->
-const TREASURY_ADDRESS = "<KUri8T4UV7J5AtXg9hLnyiBPm4zFm44Zk5usdDfCrXU>";
+const TREASURY_ADDRESS = "KUri8T4UV7J5AtXg9hLnyiBPm4zFm44Zk5usdDfCrXU";
 
 async function connectWallet() {
   if (!window.solana || !window.solana.isPhantom) {
