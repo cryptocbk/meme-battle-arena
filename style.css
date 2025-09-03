@@ -27,3 +27,200 @@ h1 {
   border-radius: 10px;
   padding: 5px;
   cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100px;
+  background: rgba(0,0,0,0.3);
+}
+.hero-card:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px #0ff;
+}
+.hero-card img {
+  width: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.battle-arena {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 20px 0;
+  position: relative;
+  height: 220px;
+}
+.hero-container {
+  width: 150px;
+  height: 150px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hero-container img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.vs {
+  font-family: 'Bangers', cursive;
+  font-size: 48px;
+  margin: 0 20px;
+  color: #ff00ff;
+  text-shadow: 0 0 10px #ff0, 0 0 20px #f0f;
+}
+
+.battle-log {
+  background: rgba(0, 0, 0, 0.6);
+  margin: 20px auto;
+  padding: 10px;
+  width: 90%;
+  max-width: 600px;
+  border-radius: 10px;
+  height: 150px;
+  overflow-y: auto;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  margin: 5px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(45deg, #0ff, #f0f, #0ff);
+  color: #000;
+  font-weight: bold;
+  text-shadow: 0 0 5px #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px #0ff;
+}
+
+footer { margin: 20px 0; }
+.socials { display: flex; justify-content: center; gap: 15px; }
+.socials img {
+  width: 40px; height: 40px;
+  transition: transform 0.2s, filter 0.2s;
+}
+.socials img:hover { transform: scale(1.2); filter: drop-shadow(0 0 10px #0ff); }
+
+/* HP bar: белый фон, цвет от зелёного к жёлтому (до 50%), затем к красному */
+.hp-bar {
+  width: 100%;
+  height: 12px;
+  background: #fff;             /* белый фон шкалы */
+  border-radius: 5px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.hp-fill {
+  height: 100%;
+  background: green;
+  transition: width 0.25s linear, background-color 0.25s linear;
+  border-radius: 5px;
+}
+
+/* Modal */
+.modal {
+  display: none;                /* по умолчанию скрыта */
+  position: fixed;
+  z-index: 100;                 /* поверх арены */
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  justify-content: center;
+  align-items: center;
+}
+.modal.show { display: flex; }  /* показываем через класс .show */
+
+.modal-content {
+  background: #111;
+  border: 2px solid #0ff;
+  border-radius: 12px;
+  padding: 20px 20px 60px;
+  text-align: center;
+  width: 90%;
+  max-width: 420px;
+  position: relative;
+  overflow: hidden;             /* эффекты падают внутри окна */
+  box-shadow: 0 0 30px #0ff;
+}
+.modal-content h2 {
+  font-family: 'Bangers', cursive;
+  font-size: 36px;
+  margin: 6px 0 0;
+}
+.modal-content p { margin: 8px 0 12px; font-size: 20px; }
+
+/* Мерцание по результату */
+.modal.victory .modal-content { animation: flashGreen 1.3s ease-in-out infinite alternate; }
+.modal.defeat  .modal-content { animation: flashRed   1.3s ease-in-out infinite alternate; }
+@keyframes flashGreen { from { box-shadow: 0 0 20px #1eff00; } to { box-shadow: 0 0 60px #1eff00; } }
+@keyframes flashRed   { from { box-shadow: 0 0 20px #ff0033; } to { box-shadow: 0 0 60px #ff0033; } }
+
+/* Контейнер эффектов внутри модалки */
+#effectsContainer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Конфетти */
+.confetti {
+  position: absolute;
+  top: -20px;
+  border-radius: 50%;
+  opacity: 0.95;
+  will-change: transform;
+  animation-name: fallConfetti;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes fallConfetti {
+  0%   { transform: translateY(-10%) rotate(0deg); }
+  100% { transform: translateY(120%) rotate(720deg); }
+}
+
+/* Черепа */
+.skull {
+  position: absolute;
+  top: -30px;
+  opacity: 0.9;
+  will-change: transform;
+  animation-name: fallSkull;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+@keyframes fallSkull {
+  0%   { transform: translateY(-10%) rotate(0deg); }
+  100% { transform: translateY(120%) rotate(360deg); }
+}
+
+/* Салют (круговые вспышки) */
+.firework {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  opacity: 0.95;
+  transform: translate(-50%, -50%) scale(0.2);
+  animation: burst 1.2s ease-out forwards;
+}
+@keyframes burst {
+  0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(0.2); }
+  70%  { opacity: 1;   transform: translate(-50%,-50%) scale(1.2); }
+  100% { opacity: 0;   transform: translate(-50%,-50%) scale(1.8); }
+}
+
+/* Кнопка в модалке */
+#closeModal {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+}
