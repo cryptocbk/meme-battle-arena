@@ -92,3 +92,20 @@ window.myWallet = {
 
 // auto-bind UI
 if (connectBtn) connectBtn.addEventListener('click', connectWallet);
+// temporary test button handler
+const testBtn = document.getElementById('testSendBtn');
+if (testBtn) {
+  testBtn.addEventListener('click', async () => {
+    try {
+      if (!window.solana || !window.solana.publicKey) {
+        await window.myWallet.connectWallet();
+      }
+      const res = await window.myWallet.sendBet(0.01);
+      alert('sendBet result: ' + JSON.stringify(res));
+      console.log('sendBet result:', res);
+    } catch (e) {
+      console.error(e);
+      alert('sendBet threw: ' + (e && e.message ? e.message : e));
+    }
+  });
+}
