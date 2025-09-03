@@ -22,8 +22,6 @@ const sounds = {
   crit: new Audio("sounds/crit.mp3"),
   win: new Audio("sounds/win.mp3"),
   lose: new Audio("sounds/lose.mp3"),
-  draw: new Audio("sounds/draw.mp3"),
-  evil: new Audio("sounds/evil.mp3"),
   bg: new Audio("sounds/bg.mp3")
 };
 sounds.bg.loop = true; sounds.bg.volume=0.3; sounds.bg.play();
@@ -82,18 +80,17 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
     document.getElementById("enemyHp").style.width=enemyHP+"%";
     document.getElementById("enemyHp").style.backgroundColor=`rgb(${255-(enemyHP*2.55)},${enemyHP*2.55},0)`;
 
-    logDiv.innerHTML+=`Player hits ${playerDamage}, Enemy hits ${enemyDamage}<br>`; logDiv.scrollTop=logDiv.scrollHeight;
+    logDiv.innerHTML+=`Player hits ${playerDamage}, Enemy hits ${enemyDamage}<br>`; 
+    logDiv.scrollTop=logDiv.scrollHeight;
   }
 
   let result="";
   if(playerHP>enemyHP){result="win"; balance+=bet*multiplier; if(!muted)sounds.win.play(); showResult("win");}
-  else if(playerHP<enemyHP){result="lose"; balance-=bet; if(!muted){sounds.lose.play(); sounds.evil.play();} showResult("lose");}
-  else{result="draw"; if(!muted)sounds.draw.play(); showResult("draw");}
+  else{result="lose"; balance-=bet; if(!muted)sounds.lose.play(); showResult("lose");}
 
   document.getElementById("balance").innerText=balance.toFixed(3);
   localStorage.setItem("balance",balance.toFixed(3));
-  updateHistory(result, result==="draw"?0:bet*multiplier);
-  logDiv.innerHTML+=`Battle ended: ${result.toUpperCase()}<br>`;
+  updateHistory(result, bet*multiplier);
 });
 
 function flashScreen(type){
@@ -114,10 +111,6 @@ function showResult(type){
     overlay.style.color="red"; overlay.innerText="DEFEAT!"; overlay.style.opacity=1;
     setTimeout(()=>overlay.style.opacity=0,1500);
   }
-  if(type==="draw"){
-    overlay.style.color="cyan"; overlay.innerText="DRAW!"; overlay.style.opacity=1;
-    setTimeout(()=>overlay.style.opacity=0,1500);
-  }
 }
 
 function createConfetti(){
@@ -129,21 +122,3 @@ function createConfetti(){
     setTimeout(()=>document.body.removeChild(c),1000);
   }
 }
-
-function updateHistory(result, solChange){
-  let history=JSON.parse(localStorage.getItem("history"))||[];
-  history.push({result,solChange,date:new Date().toLocaleTimeString()});
-  localStorage.setItem("history",JSON.stringify(history));
-  renderHistory(history);
-}
-
-function renderHistory(history){
-  const hDiv=document.getElementById("history"); hDiv.innerHTML="<h3>Recent Battles</h3>";
-  history.slice(-5).reverse().forEach(h=>{ hDiv.innerHTML+=`${h.date}: ${h.result.toUpperCase()} (${h.solChange.toFixed(3)} SOL)<br>`; });
-
-  const lDiv=document.getElementById("leaderboard"); lDiv.innerHTML="<h3>Leaderboard</h3>";
-  const leaderboard=[...history].sort((a,b)=>b.solChange-a.solChange).slice(0,5);
-  leaderboard.forEach(l=>{ lDiv.innerHTML+=`${l.date}: ${l.result.toUpperCase()} (${l.solChange.toFixed(3)} SOL)<br>`; });
-}
-
-renderHistory(JSON.parse(localStorage.getItem("history"))||[]);
