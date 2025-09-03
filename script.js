@@ -8,15 +8,16 @@ const heroesData = [
   { name: "Melania", img: "images/melania.png" },
 ];
 
+// Стартовый баланс всегда 3.0 SOL
 let balance = parseFloat(localStorage.getItem("balance")) || 3.0;
 document.getElementById("balance").innerText = balance.toFixed(3);
 
 const heroesDiv = document.getElementById("heroes");
 let playerHero = null;
+let battleActive = false; // флаг — идёт ли бой
 
 // --- Web Audio ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let bgMusic = null, bgGain = null;
 
 // --- Звуки событий ---
 function playSound(type) {
@@ -26,67 +27,17 @@ function playSound(type) {
   gain.connect(audioCtx.destination);
 
   if (type === "attack") {
-    osc.type = "square"; osc.frequency.value = 300; gain.gain.value = 0.05;
+    osc.type = "square"; osc.frequency.value = 220; gain.gain.value = 0.05;
   }
   if (type === "win") {
-    osc.type = "triangle"; osc.frequency.value = 800; gain.gain.value = 0.2;
+    osc.type = "triangle"; osc.frequency.value = 600; gain.gain.value = 0.2;
   }
   if (type === "lose") {
-    osc.type = "sawtooth"; osc.frequency.value = 100; gain.gain.value = 0.25;
+    osc.type = "sawtooth"; osc.frequency.value = 120; gain.gain.value = 0.25;
   }
 
   osc.start();
   osc.stop(audioCtx.currentTime + 0.4);
-}
-
-// --- Эпичная музыка с барабанами ---
-function startEpicMusic() {
-  stopEpicMusic();
-
-  bgGain = audioCtx.createGain();
-  bgGain.gain.value = 0.15;
-  bgGain.connect(audioCtx.destination);
-
-  bgMusic = [];
-
-  // Барабаны
-  const drum = audioCtx.createOscillator();
-  const drumGain = audioCtx.createGain();
-  drum.type = "sine";
-  drum.frequency.value = 100;
-  drumGain.gain.value = 0.15;
-
-  const lfo = audioCtx.createOscillator();
-  const lfoGain = audioCtx.createGain();
-  lfo.frequency.value = 1.5;
-  lfoGain.gain.value = 50;
-  lfo.connect(lfoGain);
-  lfoGain.connect(drum.frequency);
-
-  drum.connect(drumGain).connect(bgGain);
-  drum.start();
-  lfo.start();
-  bgMusic.push(drum, lfo);
-
-  // Эпичная мелодия (полифония sawtooth)
-  [440, 554, 659].forEach((freq, i) => {
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    osc.type = "sawtooth";
-    osc.frequency.value = freq;
-    g.gain.value = 0.05;
-    osc.connect(g).connect(bgGain);
-    osc.start(audioCtx.currentTime + i * 0.2);
-    bgMusic.push(osc);
-  });
-}
-
-function stopEpicMusic() {
-  if (bgMusic) {
-    bgMusic.forEach(o => { try { o.stop(); } catch {} });
-    bgMusic = null;
-  }
-  if (bgGain) { bgGain.disconnect(); bgGain = null; }
 }
 
 // --- Ставка ---
@@ -100,6 +51,7 @@ heroesData.forEach(hero => {
   card.className = "hero-card";
   card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
   card.addEventListener("click", () => {
+    if (battleActive) return; // нельзя менять героя во время боя
     playerHero = { ...hero, hp: 100 };
     document.getElementById("playerHero").innerHTML = `
       <img src="${hero.img}" alt="${hero.name}">
@@ -127,12 +79,10 @@ document.getElementById("startBattle").addEventListener("click", async () => {
 
   const logDiv = document.getElementById("log"); logDiv.innerHTML = "";
 
-  startEpicMusic();
-
   let playerHP = 100, enemyHP = 100;
-  let battleOver = false;
+  battleActive = true;
 
-  while (!battleOver) {
+  while (playerHP > 0 && enemyHP > 0) {
     await new Promise(r => setTimeout(r, 600));
 
     let dmgP = Math.floor(Math.random() * 15 + 5);
@@ -150,10 +100,6 @@ document.getElementById("startBattle").addEventListener("click", async () => {
     logDiv.scrollTop = logDiv.scrollHeight;
 
     playSound("attack");
-
-    if (enemyHP <= 0 || playerHP <= 0) {
-      battleOver = true;
-    }
   }
 
   // Шансы
@@ -173,10 +119,10 @@ document.getElementById("startBattle").addEventListener("click", async () => {
     showResult("DEFEAT!", `-${bet.toFixed(3)} ◎`, false);
   }
 
-  stopEpicMusic();
-
   document.getElementById("balance").innerText = balance.toFixed(3);
   localStorage.setItem("balance", balance.toFixed(3));
+
+  battleActive = false;
 });
 
 // --- Результаты ---
@@ -184,45 +130,36 @@ function showResult(text, amount, win) {
   const modal = document.getElementById("resultModal");
   const txt = document.getElementById("resultText");
   const amt = document.getElementById("resultAmount");
+  const effects = document.getElementById("resultEffects");
 
   txt.innerText = text;
   txt.style.color = win ? "lime" : "red";
   amt.innerText = amount;
 
-  modal.style.display = "block";
+  modal.style.display = "flex";
+  effects.innerHTML = "";
 
-  if (win) createConfetti();
-  else createSkulls();
+  if (win) {
+    for (let i = 0; i < 40; i++) {
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = Math.random() * 100 + "%";
+      c.style.top = "-10px";
+      c.style.backgroundColor = `hsl(${Math.random() * 360},100%,50%)`;
+      effects.appendChild(c);
+    }
+  } else {
+    for (let i = 0; i < 25; i++) {
+      const s = document.createElement("div");
+      s.className = "skull";
+      s.innerText = "💀";
+      s.style.left = Math.random() * 100 + "%";
+      s.style.top = "-10px";
+      effects.appendChild(s);
+    }
+  }
 }
 
 document.getElementById("tryAgain").addEventListener("click", () => {
   document.getElementById("resultModal").style.display = "none";
 });
-
-// --- Эффекты ---
-function createConfetti() {
-  for (let i = 0; i < 50; i++) {
-    const c = document.createElement("div");
-    c.className = "confetti";
-    c.style.left = Math.random() * window.innerWidth + "px";
-    c.style.top = "-20px";
-    c.style.backgroundColor = `hsl(${Math.random() * 360},100%,50%)`;
-    document.body.appendChild(c);
-    setTimeout(() => document.body.removeChild(c), 2500);
-  }
-}
-
-function createSkulls() {
-  for (let i = 0; i < 25; i++) {
-    const s = document.createElement("div");
-    s.className = "skull";
-    s.innerText = "💀";
-    s.style.position = "absolute";
-    s.style.left = Math.random() * window.innerWidth + "px";
-    s.style.top = "-20px";
-    s.style.fontSize = "24px";
-    s.style.animation = "fall 2.5s linear forwards";
-    document.body.appendChild(s);
-    setTimeout(() => document.body.removeChild(s), 2500);
-  }
-}
