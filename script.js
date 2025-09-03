@@ -15,24 +15,24 @@ document.getElementById("balance").innerText = balance.toFixed(3);
 
 /* =================== Audio =================== */
 const sounds = {
-  attack: new Audio("sounds/attack.mp3"),
-  crit:   new Audio("sounds/crit.mp3"),
-  win:    new Audio("sounds/win.mp3"),
-  lose:   new Audio("sounds/lose.mp3"),
-  select: new Audio("sounds/select.mp3"),
-  bg:     new Audio("sounds/bg.mp3")
+  attack: "sounds/attack.mp3",
+  crit:   "sounds/crit.mp3",
+  win:    "sounds/win.mp3",
+  lose:   "sounds/lose.mp3",
+  select: "sounds/select.mp3",
+  bg:     "sounds/bg.mp3"
 };
-sounds.bg.loop = true;
-sounds.bg.volume = 0.32;
-
+let bgAudio = null;
 let audioUnlocked = false;
 function unlockAudioOnce() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  try { sounds.bg.play().catch(()=>{}); } catch(e){}
-  ["select","attack","crit","win","lose"].forEach(k => {
-    try { const a = new Audio(`sounds/${k}.mp3`); a.play().then(()=>a.pause()).catch(()=>{}); } catch(e){}
-  });
+  try {
+    bgAudio = new Audio(sounds.bg);
+    bgAudio.loop = true;
+    bgAudio.volume = 0.32;
+    bgAudio.play().catch(()=>{});
+  } catch(e){}
   document.removeEventListener("click", unlockAudioOnce);
   document.removeEventListener("touchstart", unlockAudioOnce);
 }
@@ -60,7 +60,7 @@ let battleInProgress = false;
 
 /* =================== Utils =================== */
 function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
-function playSoundOnce(name, vol=1.0){ try { const a = new Audio(`sounds/${name}.mp3`); a.volume = vol; a.play().catch(()=>{}); } catch(e){} }
+function playSoundOnce(name, vol=1.0){ try { const a = new Audio(sounds[name]); a.volume = vol; a.play().catch(()=>{}); } catch(e){} }
 function logLine(txt){ logDiv.innerHTML += txt + "<br>"; logDiv.scrollTop = logDiv.scrollHeight; }
 function setCardsDisabled(disabled){ document.querySelectorAll(".hero-card").forEach(c => {
   if (disabled) c.classList.add("disabled"); else c.classList.remove("disabled");
@@ -129,7 +129,7 @@ function getWinChanceForMultiplier(mult) {
   return 0.40;
 }
 
-/* =================== Battle logic with wallet sendBet integration =================== */
+/* =================== Battle logic =================== */
 document.getElementById("startBattle").addEventListener("click", async () => {
   if (!playerHero) { alert("Choose a hero!"); return; }
   if (battleInProgress) return;
@@ -138,48 +138,7 @@ document.getElementById("startBattle").addEventListener("click", async () => {
   const bet = parseFloat(betSlider.value);
   if (balance < bet) { alert("Not enough balance!"); return; }
 
-  // wallet integration must be present
-  if (!window.myWallet) {
-    alert("Wallet integration missing. Make sure wallet.js is loaded.");
-    return;
-  }
-
-  // ensure connection
-  if (!window.solana || !window.solana.publicKey) {
-    const ok = confirm("Wallet not connected. Connect now?");
-    if (!ok) return;
-    await window.myWallet.connectWallet();
-    if (!window.solana || !window.solana.publicKey) return;
-  }
-
-  // Send bet on-chain (devnet) and check result
-  let txRes;
-  try {
-    txRes = await window.myWallet.sendBet(bet);
-  } catch (e) {
-    console.error('sendBet threw', e);
-    alert('Bet failed (exception). See console.');
-    return;
-  }
-  if (!txRes || !txRes.ok) {
-    console.error('Bet failed result', txRes);
-    if (txRes && txRes.code === 'USER_REJECTED') {
-      alert('Bet cancelled by user.');
-    } else if (txRes && txRes.code === 'INSUFFICIENT_FUNDS') {
-      alert('Not enough SOL in your wallet to place this bet.');
-    } else if (txRes && txRes.code === 'INVALID_TREASURY') {
-      alert('Treasury address misconfigured. Contact admin.');
-    } else {
-      alert('Bet failed: ' + (txRes && txRes.error ? txRes.error : 'unknown error (see console)'));
-    }
-    return;
-  }
-
-  // optionally show signature
-  console.log('Bet tx confirmed', txRes.signature);
-  alert('Bet confirmed: ' + txRes.signature);
-
-  // START BATTLE (after bet confirmed)
+  // START BATTLE (local balance)
   battleInProgress = true;
   setCardsDisabled(true);
 
@@ -295,11 +254,11 @@ function spawnRibbons(n=60){
     el.style.left = Math.random()*100 + "%";
     el.style.setProperty("--dx", (Math.random()*380 - 190) + "px");
     el.style.setProperty("--rot", (360 + Math.random()*1080) + "deg");
-    el.style.setProperty("--t", (2.6 + Math.random()*2.4) + "s");
+    el.style.setProperty("--t", (3.6 + Math.random()*2.4) + "s");
     const hue = Math.floor(Math.random()*360);
     el.style.background = `linear-gradient(${Math.random()*360}deg, hsl(${hue} 80% 55%), hsl(${(hue+40)%360} 80% 45%))`;
     effectContainer.appendChild(el);
-    setTimeout(()=>el.remove(), 5200);
+    setTimeout(()=>el.remove(), 7000);
   }
 }
 function spawnSkulls(n=50){
@@ -311,9 +270,9 @@ function spawnSkulls(n=50){
     el.style.fontSize = (12 + Math.random()*18) + "px";
     el.style.setProperty("--dx", (Math.random()*360 - 180) + "px");
     el.style.setProperty("--rot", (180 + Math.random()*900) + "deg");
-    el.style.setProperty("--t", (2.6 + Math.random()*2.6) + "s");
+    el.style.setProperty("--t", (3.6 + Math.random()*2.6) + "s");
     effectContainer.appendChild(el);
-    setTimeout(()=>el.remove(), 5200);
+    setTimeout(()=>el.remove(), 7000);
   }
 }
 function showResultModal({type, amount}){
@@ -323,11 +282,11 @@ function showResultModal({type, amount}){
   if (type === "win"){
     titleEl.style.color = "lime"; titleEl.textContent = "VICTORY!";
     amountEl.textContent = `+${amount.toFixed(3)} ◎ SOL`;
-    spawnRibbons(70);
+    spawnRibbons(60);
   } else {
     titleEl.style.color = "red"; titleEl.textContent = "DEFEAT!";
     amountEl.textContent = `-${amount.toFixed(3)} ◎ SOL`;
-    spawnSkulls(60);
+    spawnSkulls(45);
   }
   modal.style.display = "flex";
   setCardsDisabled(true);
