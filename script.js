@@ -14,11 +14,11 @@ document.getElementById("balance").innerText = balance.toFixed(3);
 const heroesDiv = document.getElementById("heroes");
 let playerHero = null;
 
-// Web Audio
+// --- Web Audio ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let bgGain = null, bgNoise = null, bgDrums = null;
+let bgMusic = null, bgGain = null;
 
-// --- Функция звуков
+// --- Звуки событий ---
 function playSound(type) {
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -26,85 +26,81 @@ function playSound(type) {
   gain.connect(audioCtx.destination);
 
   if (type === "attack") {
-    osc.type = "square"; osc.frequency.value = 400; gain.gain.value = 0.1;
+    osc.type = "square"; osc.frequency.value = 300; gain.gain.value = 0.05;
   }
   if (type === "win") {
-    osc.type = "triangle"; osc.frequency.value = 800; gain.gain.value = 0.15;
+    osc.type = "triangle"; osc.frequency.value = 800; gain.gain.value = 0.2;
   }
   if (type === "lose") {
-    osc.type = "sawtooth"; osc.frequency.value = 120; gain.gain.value = 0.2;
+    osc.type = "sawtooth"; osc.frequency.value = 100; gain.gain.value = 0.25;
   }
 
   osc.start();
   osc.stop(audioCtx.currentTime + 0.4);
 }
 
-// --- Фоновые звуки (толпа + барабаны)
-function startBackgroundAudio() {
-  stopBackgroundAudio();
+// --- Эпичная музыка с барабанами ---
+function startEpicMusic() {
+  stopEpicMusic();
 
   bgGain = audioCtx.createGain();
   bgGain.gain.value = 0.15;
   bgGain.connect(audioCtx.destination);
 
-  // Noise (crowd)
-  const bufferSize = 2 * audioCtx.sampleRate;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const output = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    output[i] = Math.random() * 2 - 1;
-  }
-  bgNoise = audioCtx.createBufferSource();
-  bgNoise.buffer = buffer;
-  bgNoise.loop = true;
+  bgMusic = [];
 
-  const noiseFilter = audioCtx.createBiquadFilter();
-  noiseFilter.type = "bandpass";
-  noiseFilter.frequency.value = 400;
-  noiseFilter.Q.value = 1;
-
-  bgNoise.connect(noiseFilter);
-  noiseFilter.connect(bgGain);
-  bgNoise.start();
-
-  // Drums
-  bgDrums = audioCtx.createOscillator();
+  // Барабаны
+  const drum = audioCtx.createOscillator();
   const drumGain = audioCtx.createGain();
-  drumGain.gain.value = 0.05;
-  bgDrums.type = "sine";
-  bgDrums.frequency.setValueAtTime(60, audioCtx.currentTime);
+  drum.type = "sine";
+  drum.frequency.value = 100;
+  drumGain.gain.value = 0.15;
 
-  // Tremolo effect (boom-boom)
   const lfo = audioCtx.createOscillator();
   const lfoGain = audioCtx.createGain();
-  lfo.frequency.value = 1.5; // beats per sec
-  lfoGain.gain.value = 40;
+  lfo.frequency.value = 1.5;
+  lfoGain.gain.value = 50;
   lfo.connect(lfoGain);
-  lfoGain.connect(bgDrums.frequency);
+  lfoGain.connect(drum.frequency);
 
-  bgDrums.connect(drumGain).connect(bgGain);
-  bgDrums.start();
+  drum.connect(drumGain).connect(bgGain);
+  drum.start();
   lfo.start();
+  bgMusic.push(drum, lfo);
+
+  // Эпичная мелодия (полифония sawtooth)
+  [440, 554, 659].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.value = freq;
+    g.gain.value = 0.05;
+    osc.connect(g).connect(bgGain);
+    osc.start(audioCtx.currentTime + i * 0.2);
+    bgMusic.push(osc);
+  });
 }
 
-function stopBackgroundAudio() {
-  if(bgNoise) { bgNoise.stop(); bgNoise.disconnect(); bgNoise = null; }
-  if(bgDrums) { bgDrums.stop(); bgDrums.disconnect(); bgDrums = null; }
-  if(bgGain) { bgGain.disconnect(); bgGain = null; }
+function stopEpicMusic() {
+  if (bgMusic) {
+    bgMusic.forEach(o => { try { o.stop(); } catch {} });
+    bgMusic = null;
+  }
+  if (bgGain) { bgGain.disconnect(); bgGain = null; }
 }
 
-// --- Ставка
+// --- Ставка ---
 const betSlider = document.getElementById("bet");
 const betValueSpan = document.getElementById("betValue");
-betSlider.addEventListener("input", ()=> betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
+betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
 
-// --- Герои
+// --- Герои ---
 heroesData.forEach(hero => {
   const card = document.createElement("div");
   card.className = "hero-card";
   card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
-  card.addEventListener("click", ()=>{
-    playerHero = {...hero, hp: 100};
+  card.addEventListener("click", () => {
+    playerHero = { ...hero, hp: 100 };
     document.getElementById("playerHero").innerHTML = `
       <img src="${hero.img}" alt="${hero.name}">
       <div class="hp-bar"><div class="hp-fill" id="playerHp"></div></div>`;
@@ -113,16 +109,16 @@ heroesData.forEach(hero => {
 });
 
 function getRandomEnemy() {
-  return {...heroesData[Math.floor(Math.random() * heroesData.length)], hp: 100};
+  return { ...heroesData[Math.floor(Math.random() * heroesData.length)], hp: 100 };
 }
 
-// --- Бой
-document.getElementById("startBattle").addEventListener("click", async()=>{
-  if(!playerHero){ alert("Choose a hero!"); return; }
+// --- Бой ---
+document.getElementById("startBattle").addEventListener("click", async () => {
+  if (!playerHero) { alert("Choose a hero!"); return; }
 
   const multiplier = parseInt(document.getElementById("multiplier").value);
   let bet = parseFloat(betSlider.value);
-  if(balance < bet){ alert("Not enough balance!"); return; }
+  if (balance < bet) { alert("Not enough balance!"); return; }
 
   let enemyHero = getRandomEnemy();
   document.getElementById("enemyHero").innerHTML = `
@@ -131,18 +127,21 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
 
   const logDiv = document.getElementById("log"); logDiv.innerHTML = "";
 
-  startBackgroundAudio();
+  startEpicMusic();
 
-  // Анимация боя
   let playerHP = 100, enemyHP = 100;
-  const duration = 20, interval = 500, totalTicks = Math.floor(duration*1000/interval);
+  let battleOver = false;
 
-  for(let i=0;i<totalTicks;i++){
-    await new Promise(r => setTimeout(r, interval));
-    let dmgP = Math.floor(Math.random()*10+5);
-    let dmgE = Math.floor(Math.random()*10+5);
-    playerHP -= dmgE; enemyHP -= dmgP;
-    if(playerHP<0) playerHP=0; if(enemyHP<0) enemyHP=0;
+  while (!battleOver) {
+    await new Promise(r => setTimeout(r, 600));
+
+    let dmgP = Math.floor(Math.random() * 15 + 5);
+    let dmgE = Math.floor(Math.random() * 15 + 5);
+
+    enemyHP -= dmgP;
+    playerHP -= dmgE;
+    if (enemyHP < 0) enemyHP = 0;
+    if (playerHP < 0) playerHP = 0;
 
     document.getElementById("playerHp").style.width = playerHP + "%";
     document.getElementById("enemyHp").style.width = enemyHP + "%";
@@ -151,33 +150,37 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
     logDiv.scrollTop = logDiv.scrollHeight;
 
     playSound("attack");
+
+    if (enemyHP <= 0 || playerHP <= 0) {
+      battleOver = true;
+    }
   }
 
-  // Шанс победы
+  // Шансы
   let chance = 0.5;
-  if(multiplier===3) chance = 0.3;
-  if(multiplier===5) chance = 0.15;
+  if (multiplier === 3) chance = 0.3;
+  if (multiplier === 5) chance = 0.15;
 
   let result = Math.random() < chance ? "win" : "lose";
 
-  if(result==="win"){
-    balance += bet*multiplier;
+  if (result === "win") {
+    balance += bet * multiplier;
     playSound("win");
-    showResult("VICTORY!", `+${(bet*multiplier).toFixed(3)} ◎`, true);
+    showResult("VICTORY!", `+${(bet * multiplier).toFixed(3)} ◎`, true);
   } else {
     balance -= bet;
     playSound("lose");
     showResult("DEFEAT!", `-${bet.toFixed(3)} ◎`, false);
   }
 
-  stopBackgroundAudio();
+  stopEpicMusic();
 
   document.getElementById("balance").innerText = balance.toFixed(3);
   localStorage.setItem("balance", balance.toFixed(3));
 });
 
-// --- Результаты
-function showResult(text, amount, win){
+// --- Результаты ---
+function showResult(text, amount, win) {
   const modal = document.getElementById("resultModal");
   const txt = document.getElementById("resultText");
   const amt = document.getElementById("resultAmount");
@@ -188,34 +191,38 @@ function showResult(text, amount, win){
 
   modal.style.display = "block";
 
-  if(win) createConfetti();
+  if (win) createConfetti();
   else createSkulls();
 }
 
-document.getElementById("tryAgain").addEventListener("click", ()=>{
+document.getElementById("tryAgain").addEventListener("click", () => {
   document.getElementById("resultModal").style.display = "none";
 });
 
-// --- Эффекты
-function createConfetti(){
-  for(let i=0;i<40;i++){
+// --- Эффекты ---
+function createConfetti() {
+  for (let i = 0; i < 50; i++) {
     const c = document.createElement("div");
-    c.className="confetti";
-    c.style.left = Math.random()*window.innerWidth + "px";
+    c.className = "confetti";
+    c.style.left = Math.random() * window.innerWidth + "px";
     c.style.top = "-20px";
-    c.style.backgroundColor = `hsl(${Math.random()*360},100%,50%)`;
+    c.style.backgroundColor = `hsl(${Math.random() * 360},100%,50%)`;
     document.body.appendChild(c);
-    setTimeout(()=>document.body.removeChild(c),2000);
+    setTimeout(() => document.body.removeChild(c), 2500);
   }
 }
 
-function createSkulls(){
-  for(let i=0;i<20;i++){
+function createSkulls() {
+  for (let i = 0; i < 25; i++) {
     const s = document.createElement("div");
-    s.className="skull";
-    s.style.left = Math.random()*window.innerWidth + "px";
+    s.className = "skull";
+    s.innerText = "💀";
+    s.style.position = "absolute";
+    s.style.left = Math.random() * window.innerWidth + "px";
     s.style.top = "-20px";
+    s.style.fontSize = "24px";
+    s.style.animation = "fall 2.5s linear forwards";
     document.body.appendChild(s);
-    setTimeout(()=>document.body.removeChild(s),2000);
+    setTimeout(() => document.body.removeChild(s), 2500);
   }
 }
