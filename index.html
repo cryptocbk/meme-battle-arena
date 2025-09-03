@@ -6,6 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <!-- Buffer polyfill для браузера -->
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
+<script>
+  // выставим глобальную переменную Buffer если она ещё не определена
+  if (typeof window.Buffer === 'undefined' && window.buffer && window.buffer.Buffer) {
+    window.Buffer = window.buffer.Buffer;
+  }
+</script>
+
+<!-- Solana web3 (IIFE) -->
+<script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.js"></script>
+
 
   <!-- Solana web3 (IIFE build) - quick test via CDN -->
   <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.js"></script>
