@@ -94,14 +94,22 @@ function rollStats(){
   };
 }
 function renderStats(container, s){
+  // безопасная конвертация чисел/строк
+  const atk   = String(s.atk);
+  const def   = String(s.def);
+  const crit  = (s.crit*100).toFixed(0) + "%";
+  const agi   = String(s.agi);
+  const skill = String(s.skill);
+
   container.innerHTML = `
-    <div>🗡️ Attack: <b>${s.atk}</b></div>
-    <div>🛡️ Defense: <b>${s.def}</b></div>
-    <div>💥 Crit: <b>${(s.crit*100).toFixed(0)}%</b></div>
-    <div>🦊 Agility: <b>${s.agi}</b></div>
-    <div>✨ Skill: <b>${s.skill}</b></div>
+    <div class="stat-row"><div class="stat-left">🗡️ <span>Attack:</span></div><div class="stat-value">${atk}</div></div>
+    <div class="stat-row"><div class="stat-left">🛡️ <span>Defense:</span></div><div class="stat-value">${def}</div></div>
+    <div class="stat-row"><div class="stat-left">💥 <span>Crit:</span></div><div class="stat-value">${crit}</div></div>
+    <div class="stat-row"><div class="stat-left">🦊 <span>Agility:</span></div><div class="stat-value">${agi}</div></div>
+    <div class="stat-row"><div class="stat-left">✨ <span>Skill:</span></div><div class="stat-value">${skill}</div></div>
   `;
 }
+
 
 /* =================== Render heroes =================== */
 function createHeroCard(hero){
