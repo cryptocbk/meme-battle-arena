@@ -29,15 +29,25 @@ const sounds = {
 sounds.bg.loop = true;
 sounds.bg.volume = 0.35;
 
+function safePlaySound(name, vol=1.0){
+  // create new audio instance each play to avoid mobile playback issues
+  try {
+    const src = `sounds/${name}.mp3`;
+    const a = new Audio(src);
+    a.volume = vol;
+    a.play().catch(()=>{});
+  } catch(e){}
+}
+
 // unlock bg on first interaction (mobile autoplay policy)
 let audioUnlocked = false;
 function unlockAudioOnce() {
   if (audioUnlocked) return;
   audioUnlocked = true;
   try { sounds.bg.play().catch(()=>{}); } catch(e){}
-  // prime short sounds
+  // prime short sounds by creating and pausing them
   ["select","attack","crit","win","lose"].forEach(k => {
-    try { sounds[k].play().then(()=>sounds[k].pause()).catch(()=>{}); } catch(e){}
+    try { const a = new Audio(`sounds/${k}.mp3`); a.play().then(()=>a.pause()).catch(()=>{}); } catch(e){}
   });
   document.removeEventListener("click", unlockAudioOnce);
   document.removeEventListener("touchstart", unlockAudioOnce);
@@ -58,6 +68,7 @@ const titleEl = document.getElementById("resultTitle");
 const amountEl = document.getElementById("resultAmount");
 const effectContainer = document.getElementById("effectContainer");
 const tryAgainBtn = document.getElementById("tryAgain");
+const multiplierEl = document.getElementById("multiplier");
 
 let playerHero = null, enemyHero = null;
 let playerStats = null, enemyStats = null;
@@ -65,8 +76,12 @@ let battleInProgress = false;
 
 /* =================== Utils =================== */
 function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
-function safePlay(a){ try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
 function logLine(txt){ logDiv.innerHTML += txt + "<br>"; logDiv.scrollTop = logDiv.scrollHeight; }
+function setCardsDisabled(disabled){
+  document.querySelectorAll(".hero-card").forEach(c => {
+    if (disabled) c.classList.add("disabled"); else c.classList.remove("disabled");
+  });
+}
 
 /* =================== Stats roll & render =================== */
 function rollStats(){
@@ -96,11 +111,13 @@ function createHeroCard(hero){
   card.addEventListener("click", () => {
     if (battleInProgress) return;
     // click sound always
-    safePlay(sounds.select);
+    safePlaySound('select', 0.75);
+    // set player hero fresh
     playerHero = { ...hero, hp: 100 };
     playerStats = rollStats();
     renderFighter("playerHero", playerHero);
     renderStats(playerStatsBox, playerStats);
+    logLine(`Selected ${hero.name}`);
   });
   return card;
 }
@@ -118,20 +135,28 @@ function renderFighter(containerId, hero){
 /* =================== Bet UI =================== */
 betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
 
+/* =================== Win chance mapping =================== */
+function getWinChanceForMultiplier(mult) {
+  if (mult === 2) return 0.5;
+  if (mult === 3) return 0.3;
+  if (mult === 5) return 0.15;
+  return 0.5;
+}
+
 /* =================== Battle logic =================== */
 document.getElementById("startBattle").addEventListener("click", async () => {
   if (!playerHero) { alert("Choose a hero!"); return; }
   if (battleInProgress) return;
 
   const bet = parseFloat(betSlider.value);
-  const multiplier = parseInt(document.getElementById("multiplier").value,10);
+  const multiplier = parseInt(multiplierEl.value,10);
   if (balance < bet) { alert("Not enough balance!"); return; }
 
   // lock selection
   battleInProgress = true;
   setCardsDisabled(true);
 
-  // spawn enemy and stats
+  // spawn enemy and stats fresh
   enemyHero = { ...heroesData[Math.floor(Math.random()*heroesData.length)], hp: 100 };
   enemyStats = rollStats();
   renderFighter("enemyHero", enemyHero);
@@ -139,27 +164,42 @@ document.getElementById("startBattle").addEventListener("click", async () => {
 
   logDiv.innerHTML = "";
 
+  // decide biased outcome based on multiplier
+  const winChance = getWinChanceForMultiplier(multiplier);
+  const playerShouldWin = Math.random() < winChance;
+
   // fight loop: player hits then enemy hits until someone <=0
   while (playerHero.hp > 0 && enemyHero.hp > 0) {
     await sleep(650);
 
     // player attack
     let pdmg = rollDamage(playerStats, enemyStats);
-    if (Math.random() < playerStats.crit) { pdmg = Math.floor(pdmg * 1.8); safePlay(sounds.crit); }
+    // apply slight bias toward chosen outcome but keep randomness
+    if (playerShouldWin) {
+      pdmg = Math.round(pdmg * (1 + (0.12 * Math.random()))); // boost player dmg by ~0..12%
+    } else {
+      pdmg = Math.round(pdmg * (1 - (0.10 * Math.random()))); // reduce player dmg slightly
+    }
+    if (Math.random() < playerStats.crit) { pdmg = Math.floor(pdmg * 1.8); safePlaySound('crit'); }
     enemyHero.hp = Math.max(0, enemyHero.hp - pdmg);
-    safePlay(sounds.attack);
+    safePlaySound('attack', 0.5);
     logLine(`You hit enemy for ${pdmg}`);
     updateHpBar("enemyHp", enemyHero.hp);
 
     if (enemyHero.hp <= 0) break;
 
-    await sleep(500);
+    await sleep(450);
 
     // enemy attack
     let edmg = rollDamage(enemyStats, playerStats);
-    if (Math.random() < enemyStats.crit) { edmg = Math.floor(edmg * 1.8); safePlay(sounds.crit); }
+    if (playerShouldWin) {
+      edmg = Math.round(edmg * (1 - (0.12 * Math.random()))); // reduce enemy dmg slightly
+    } else {
+      edmg = Math.round(edmg * (1 + (0.12 * Math.random()))); // boost enemy dmg a bit
+    }
+    if (Math.random() < enemyStats.crit) { edmg = Math.floor(edmg * 1.8); safePlaySound('crit'); }
     playerHero.hp = Math.max(0, playerHero.hp - edmg);
-    safePlay(sounds.attack);
+    safePlaySound('attack', 0.5);
     logLine(`Enemy hits you for ${edmg}`);
     updateHpBar("playerHp", playerHero.hp);
   }
@@ -169,20 +209,20 @@ document.getElementById("startBattle").addEventListener("click", async () => {
   if (win) {
     const gain = bet * multiplier;
     balance += gain;
-    safePlay(sounds.win);
+    safePlaySound('win', 1.0);
     showResultModal({ type: "win", amount: gain });
   } else {
     balance -= bet;
-    safePlay(sounds.lose);
+    safePlaySound('lose', 0.9);
     showResultModal({ type: "lose", amount: bet });
   }
 
   localStorage.setItem("balance", balance.toFixed(3));
   document.getElementById("balance").innerText = balance.toFixed(3);
 
-  // unlock selection
+  // don't re-enable cards here — require explicit Try Again to reselect
+  // marking battle finished, but keep cards disabled until user closes modal
   battleInProgress = false;
-  setCardsDisabled(false);
 });
 
 /* damage formula */
@@ -193,10 +233,7 @@ function rollDamage(attacker, defender){
   return Math.max(3, Math.round(base + atkBonus - defMit));
 }
 
-/* smooth HP color interpolation:
-   >50% : interpolate from yellow(255,200,0) at 50 -> green(0,200,0) at 100
-   <=50%: interpolate from red(220,0,0) at 0 -> yellow(255,200,0) at 50
-*/
+/* smooth HP color interpolation */
 function updateHpBar(id, hp){
   const el = document.getElementById(id);
   if (!el) return;
@@ -209,23 +246,32 @@ function updateHpBar(id, hp){
     g = 200;
   } else {
     const frac = hp / 50; // 0..1
-    r = 255;
-    g = Math.round(200 * frac);
+    r = Math.round(220 + (35 * frac)); // 220 -> 255
+    g = Math.round(0 + (200 * frac));  // 0 -> 200
   }
   el.style.backgroundColor = `rgb(${r},${g},0)`;
 }
 
-/* disable / enable hero cards while fighting */
-function setCardsDisabled(disabled){
-  document.querySelectorAll(".hero-card").forEach(c => {
-    if (disabled) c.classList.add("disabled"); else c.classList.remove("disabled");
-  });
-}
-
 /* =================== Modal / effects =================== */
 tryAgainBtn.addEventListener("click", () => {
+  // Close modal and *force* player to reselect hero for next fight
   modal.style.display = "none";
   effectContainer.innerHTML = "";
+
+  // reset fighters so next battle requires selection
+  playerHero = null;
+  enemyHero = null;
+  playerStats = null;
+  enemyStats = null;
+
+  // clear fighter DOM and stats boxes
+  document.getElementById("playerHero").innerHTML = "";
+  document.getElementById("enemyHero").innerHTML = "";
+  playerStatsBox.innerHTML = "";
+  enemyStatsBox.innerHTML = "";
+
+  // re-enable hero cards for new selection
+  setCardsDisabled(false);
 });
 
 /* spawn ribbons (ribbons) inside modal */
@@ -277,4 +323,7 @@ function showResultModal({type, amount}){
     spawnSkulls(60);
   }
   modal.style.display = "flex";
+
+  // keep hero cards disabled until user presses Try Again (forces reselect)
+  setCardsDisabled(true);
 }
