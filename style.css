@@ -63,10 +63,19 @@ h1 {
   font-size: 48px;
   color: #fff;
   text-shadow: 0 0 20px #000;
-  pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s, background-color 0.3s;
   z-index: 10;
+  /* по умолчанию клики проходят сквозь, чтобы не мешать бою/вспышкам */
+  pointer-events: none;
+}
+
+/* когда показываем результат — включаем клики */
+.result-overlay.active {
+  pointer-events: auto;
+  background-color: rgba(0,0,0,0.8);
+  flex-direction: column;
+  gap: 12px;
 }
 
 .hero-container {
@@ -120,6 +129,12 @@ button {
 button:hover {
   transform: scale(1.1);
   box-shadow: 0 0 15px #0ff;
+}
+
+/* Кнопка в модалке — чуть крупнее */
+.result-overlay.active button {
+  font-size: 18px;
+  padding: 12px 22px;
 }
 
 footer {
