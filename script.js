@@ -11,9 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
 
   // ----- STATE -----
-  let balance = parseFloat(localStorage.getItem("balance")) || 3.0;
-  const balanceEl = document.getElementById("balance");
-  balanceEl.textContent = balance.toFixed(3);
+  let balance = parseFloat(localStorage.getItem("balance"));
+if (isNaN(balance)) {
+  balance = 3.0; // стартовый баланс только при первом запуске
+  localStorage.setItem("balance", balance.toFixed(3));
+}
+document.getElementById("balance").innerText = balance.toFixed(3);
+
 
   const heroesDiv    = document.getElementById("heroes");
   const betSlider    = document.getElementById("bet");
