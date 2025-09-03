@@ -1,3 +1,4 @@
+/* Base */
 body {
   margin: 0;
   font-family: 'Orbitron', sans-serif;
@@ -13,6 +14,11 @@ h1 {
   text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
 }
 
+h2 {
+  margin: 12px 0;
+}
+
+/* Heroes */
 .hero-grid {
   display: flex;
   flex-wrap: wrap;
@@ -41,6 +47,7 @@ h1 {
   object-fit: cover;
 }
 
+/* Arena */
 .battle-arena {
   display: flex;
   justify-content: center;
@@ -52,10 +59,7 @@ h1 {
 
 .result-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -63,19 +67,10 @@ h1 {
   font-size: 48px;
   color: #fff;
   text-shadow: 0 0 20px #000;
-  opacity: 0;
-  transition: opacity 0.3s, background-color 0.3s;
-  z-index: 10;
-  /* по умолчанию клики проходят сквозь, чтобы не мешать бою/вспышкам */
   pointer-events: none;
-}
-
-/* когда показываем результат — включаем клики */
-.result-overlay.active {
-  pointer-events: auto;
-  background-color: rgba(0,0,0,0.8);
-  flex-direction: column;
-  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+  z-index: 10;
 }
 
 .hero-container {
@@ -101,6 +96,7 @@ h1 {
   text-shadow: 0 0 10px #ff0, 0 0 20px #f0f;
 }
 
+/* Battle Log */
 .battle-log {
   background: rgba(0, 0, 0, 0.6);
   margin: 20px auto;
@@ -112,6 +108,7 @@ h1 {
   overflow-y: auto;
 }
 
+/* Buttons */
 button {
   padding: 10px 20px;
   font-size: 16px;
@@ -131,33 +128,24 @@ button:hover {
   box-shadow: 0 0 15px #0ff;
 }
 
-/* Кнопка в модалке — чуть крупнее */
-.result-overlay.active button {
-  font-size: 18px;
-  padding: 12px 22px;
-}
-
-footer {
-  margin: 20px 0;
-}
-
+/* Footer */
+footer { margin: 20px 0; }
 .socials {
   display: flex;
   justify-content: center;
   gap: 15px;
 }
-
 .socials img {
   width: 40px;
   height: 40px;
   transition: transform 0.2s, filter 0.2s;
 }
-
 .socials img:hover {
   transform: scale(1.2);
   filter: drop-shadow(0 0 10px #0ff);
 }
 
+/* HP bars */
 .hp-bar {
   width: 100%;
   height: 12px;
@@ -166,25 +154,111 @@ footer {
   margin-top: 5px;
   overflow: hidden;
 }
-
 .hp-fill {
   height: 100%;
   background: green;
-  transition: width 0.3s, background-color 0.3s;
+  transition: width 0.2s linear, background-color 0.2s linear;
   border-radius: 5px;
 }
 
-/* Confetti */
-.confetti {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  opacity: 0.8;
-  z-index: 20;
-  animation: fall 1s linear forwards;
+/* Confetti (generic) */
+.confetti, .skull, .firework-particle {
+  position: fixed;
+  z-index: 1000;
+  will-change: transform, opacity;
 }
 
-@keyframes fall {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(100vh); }
+/* MODAL */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 900; /* ниже эффектов слоя, но над ареной */
+}
+.modal.hidden { display: none; }
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  position: relative;
+  background: rgba(20,20,20,0.95);
+  border: 2px solid #0ff;
+  box-shadow: 0 0 30px rgba(0,255,255,0.6);
+  border-radius: 16px;
+  padding: 24px 24px 18px;
+  width: min(520px, 92vw);
+}
+
+.modal-title {
+  font-family: 'Bangers', cursive;
+  font-size: 42px;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.modal-amount {
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 10px;
+}
+.effects-layer {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: visible;
+}
+
+/* Flicker flashes */
+@keyframes greenFlicker {
+  0%,100% { background-color: rgba(0,255,0,0); opacity: 0; }
+  10%,40%,70% { background-color: rgba(0,255,0,0.25); opacity: 1; }
+  25%,55%,85% { background-color: rgba(0,255,0,0); opacity: 0; }
+}
+@keyframes redFlicker {
+  0%,100% { background-color: rgba(255,0,0,0); opacity: 0; }
+  10%,40%,70% { background-color: rgba(255,0,0,0.25); opacity: 1; }
+  25%,55%,85% { background-color: rgba(255,0,0,0); opacity: 0; }
+}
+.flash-green {
+  animation: greenFlicker 600ms ease-in-out;
+}
+.flash-red {
+  animation: redFlicker 600ms ease-in-out;
+}
+
+/* Confetti fall */
+@keyframes confettiFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0.9; }
+}
+
+/* Skulls fall */
+@keyframes skullFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 0.95; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: 1; }
+}
+.skull {
+  font-size: 28px;
+  filter: drop-shadow(0 0 8px rgba(255,0,0,0.6));
+}
+
+/* Firework burst */
+@keyframes fireworkBurst {
+  0%   { transform: translate(0,0) scale(0.2); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; }
+}
+.firework-particle {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+
+/* Make modal button a bit larger */
+.modal-content button {
+  font-size: 18px;
+  padding: 12px 22px;
+  margin-top: 8px;
 }
