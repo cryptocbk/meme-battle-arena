@@ -8,7 +8,7 @@ const heroesData = [
   { name: "Melania", img: "images/melania.png" },
 ];
 
-// Баланс (первый запуск = 3.0 SOL)
+// Баланс
 let balance = parseFloat(localStorage.getItem("balance"));
 if (isNaN(balance)) {
   balance = 3.0;
@@ -26,31 +26,25 @@ const sounds = {
   crit: new Audio("sounds/crit.mp3"),
   win: new Audio("sounds/win.mp3"),
   lose: new Audio("sounds/lose.mp3"),
-  bg: new Audio("sounds/bg.mp3"),
-  select: new Audio("sounds/select.mp3")
+  select: new Audio("sounds/select.mp3"),
 };
-sounds.bg.loop = true;
-sounds.bg.volume = 0.3;
-sounds.bg.play();
 
 // Ставка
 const betSlider = document.getElementById("bet");
 const betValueSpan = document.getElementById("betValue");
-betSlider.addEventListener("input", () => {
-  betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3);
-});
+betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
 
-// Карточки героев
+// Рисуем героев
 heroesData.forEach(hero => {
   const card = document.createElement("div");
   card.className = "hero-card";
   card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
   card.addEventListener("click", () => {
-    playerHero = { ...hero, hp: 100 };
-    document.getElementById("playerHero").innerHTML = `
-      <img src="${hero.img}" alt="${hero.name}">
-      <div class="hp-bar"><div class="hp-fill" id="playerHp"></div></div>`;
     sounds.select.play();
+    playerHero = { ...hero, hp: 100 };
+    document.getElementById("playerHero").innerHTML =
+      `<img src="${hero.img}" alt="${hero.name}">
+       <div class="hp-bar"><div class="hp-fill" id="playerHp"></div></div>`;
   });
   heroesDiv.appendChild(card);
 });
@@ -59,7 +53,7 @@ function getRandomEnemy() {
   return { ...heroesData[Math.floor(Math.random() * heroesData.length)], hp: 100 };
 }
 
-// Бой
+// Запуск боя
 document.getElementById("startBattle").addEventListener("click", async () => {
   if (!playerHero) { alert("Choose a hero!"); return; }
   const multiplier = parseInt(document.getElementById("multiplier").value);
@@ -67,9 +61,9 @@ document.getElementById("startBattle").addEventListener("click", async () => {
   if (balance < bet) { alert("Not enough balance!"); return; }
 
   enemyHero = getRandomEnemy();
-  document.getElementById("enemyHero").innerHTML = `
-    <img src="${enemyHero.img}" alt="${enemyHero.name}">
-    <div class="hp-bar"><div class="hp-fill" id="enemyHp"></div></div>`;
+  document.getElementById("enemyHero").innerHTML =
+    `<img src="${enemyHero.img}" alt="${enemyHero.name}">
+     <div class="hp-bar"><div class="hp-fill" id="enemyHp"></div></div>`;
 
   const logDiv = document.getElementById("log");
   logDiv.innerHTML = "";
@@ -78,7 +72,6 @@ document.getElementById("startBattle").addEventListener("click", async () => {
 
   while (playerHP > 0 && enemyHP > 0) {
     await new Promise(r => setTimeout(r, 600));
-
     let playerDamage = Math.floor(Math.random() * 10 + 5);
     let enemyDamage = Math.floor(Math.random() * 10 + 5);
 
@@ -99,49 +92,63 @@ document.getElementById("startBattle").addEventListener("click", async () => {
     logDiv.scrollTop = logDiv.scrollHeight;
   }
 
-  let result = playerHP > enemyHP ? "win" : "lose";
-  if (result === "win") {
+  let result;
+  if (playerHP > enemyHP) {
     balance += bet * multiplier;
+    result = { type: "win", amount: `+${(bet * multiplier).toFixed(3)} ◎ SOL` };
     sounds.win.play();
-    showResult("win", bet * multiplier);
   } else {
     balance -= bet;
+    result = { type: "lose", amount: `-${bet.toFixed(3)} ◎ SOL` };
     sounds.lose.play();
-    showResult("lose", bet);
   }
 
-  document.getElementById("balance").innerText = balance.toFixed(3);
   localStorage.setItem("balance", balance.toFixed(3));
+  document.getElementById("balance").innerText = balance.toFixed(3);
+  showResult(result);
 });
 
 function updateHpBar(id, hp) {
-  const bar = document.getElementById(id);
-  bar.style.width = hp + "%";
-  if (hp > 50) bar.style.backgroundColor = "green";
-  else bar.style.backgroundColor = "red";
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.width = hp + "%";
+  let red = 255 - (hp * 2.55);
+  let green = hp * 2.55;
+  el.style.backgroundColor = `rgb(${red},${green},0)`;
 }
 
-function showResult(type, amount) {
-  const overlay = document.getElementById("resultOverlay");
-  overlay.style.opacity = 1;
-  overlay.innerHTML = type === "win"
-    ? `VICTORY!<br>+${amount.toFixed(3)} ◎`
-    : `DEFEAT!<br>-${amount.toFixed(3)} ◎`;
+// Модальное окно результата
+function showResult(result) {
+  const modal = document.getElementById("resultModal");
+  const title = document.getElementById("resultTitle");
+  const amount = document.getElementById("resultAmount");
+  const effect = document.getElementById("effectContainer");
+  effect.innerHTML = "";
 
-  if (type === "win") createEffect("confetti");
-  else createEffect("skull");
-
-  setTimeout(() => { overlay.style.opacity = 0; }, 2500);
-}
-
-function createEffect(type) {
-  for (let i = 0; i < 40; i++) {
-    const el = document.createElement("div");
-    el.className = type;
-    el.style.left = Math.random() * window.innerWidth + "px";
-    el.style.top = "0px";
-    el.style.backgroundColor = type === "confetti" ? `hsl(${Math.random()*360},100%,50%)` : "transparent";
-    document.body.appendChild(el);
-    setTimeout(() => document.body.removeChild(el), 3000);
+  if (result.type === "win") {
+    title.style.color = "lime";
+    title.innerText = "VICTORY!";
+    amount.innerText = result.amount;
+    for (let i = 0; i < 50; i++) createParticle("confetti", effect);
+  } else {
+    title.style.color = "red";
+    title.innerText = "DEFEAT!";
+    amount.innerText = result.amount;
+    for (let i = 0; i < 40; i++) createParticle("skull", effect);
   }
+
+  modal.style.display = "flex";
+
+  document.getElementById("tryAgain").onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+function createParticle(type, container) {
+  const p = document.createElement("div");
+  p.className = type;
+  p.style.left = Math.random() * 100 + "%";
+  p.style.backgroundColor = type === "confetti" ? `hsl(${Math.random() * 360},100%,50%)` : "";
+  container.appendChild(p);
+  setTimeout(() => p.remove(), 3000);
 }
