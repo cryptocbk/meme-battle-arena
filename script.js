@@ -14,7 +14,7 @@ document.getElementById("balance").innerText = balance.toFixed(3);
 const heroesDiv = document.getElementById("heroes");
 let playerHero = null;
 let enemyHero = null;
-let muted = false;
+let bgStarted = false; // чтобы музыка запустилась один раз
 
 // 🔊 Audio
 const sounds = {
@@ -26,13 +26,6 @@ const sounds = {
 };
 sounds.bg.loop = true; 
 sounds.bg.volume = 0.3;
-
-// кнопка mute
-document.getElementById("muteBtn").addEventListener("click", ()=>{
-  muted = !muted;
-  Object.values(sounds).forEach(s => s.muted = muted);
-  document.getElementById("muteBtn").innerText = muted ? "🔇 Muted" : "🔊 Mute";
-});
 
 // ставка
 const betSlider = document.getElementById("bet");
@@ -65,9 +58,10 @@ function getRandomEnemy() {
 document.getElementById("startBattle").addEventListener("click", async()=>{
   if(!playerHero){ alert("Choose a hero!"); return; }
 
-  // фон включается только после клика
-  if (sounds.bg.paused && !muted) {
-    sounds.bg.play();
+  // фон включается только при первом запуске
+  if (!bgStarted) {
+    sounds.bg.play().catch(()=>{});
+    bgStarted = true;
   }
 
   const multiplier = parseInt(document.getElementById("multiplier").value);
@@ -90,17 +84,17 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
     let playerDamage = Math.floor(Math.random()*10 + 5);
     let enemyDamage = Math.floor(Math.random()*10 + 5);
 
-    if(Math.random()<0.15){ playerDamage *= 2; if(!muted) sounds.crit.play(); flashScreen("player"); }
-    if(Math.random()<0.15){ enemyDamage *= 2; if(!muted) sounds.crit.play(); flashScreen("enemy"); }
+    if(Math.random()<0.15){ playerDamage *= 2; sounds.crit.play().catch(()=>{}); flashScreen("player"); }
+    if(Math.random()<0.15){ enemyDamage *= 2; sounds.crit.play().catch(()=>{}); flashScreen("enemy"); }
 
-    if(!muted) sounds.attack.play();
+    sounds.attack.play().catch(()=>{});
 
     playerHP = Math.max(0, playerHP - enemyDamage);
     enemyHP = Math.max(0, enemyHP - playerDamage);
 
     // правильный процент
-    document.getElementById("playerHp").style.width = (playerHP/100*100) + "%";
-    document.getElementById("enemyHp").style.width = (enemyHP/100*100) + "%";
+    document.getElementById("playerHp").style.width = (playerHP) + "%";
+    document.getElementById("enemyHp").style.width = (enemyHP) + "%";
 
     logDiv.innerHTML += `Player hits ${playerDamage}, Enemy hits ${enemyDamage}<br>`;
     logDiv.scrollTop = logDiv.scrollHeight;
@@ -110,11 +104,11 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
   let result = playerHP > enemyHP ? "win" : "lose";
   if(result === "win"){ 
     balance += bet*multiplier; 
-    if(!muted) sounds.win.play(); 
+    sounds.win.play().catch(()=>{}); 
   }
   else { 
     balance -= bet; 
-    if(!muted) sounds.lose.play(); 
+    sounds.lose.play().catch(()=>{}); 
   }
 
   document.getElementById("balance").innerText = balance.toFixed(3);
@@ -131,21 +125,28 @@ function flashScreen(type){
   setTimeout(()=>overlay.style.opacity=0,100);
 }
 
-// 🪧 Модальное окно результата
+// 🪧 Окно результата
 function showResult(type){
   const overlay = document.getElementById("resultOverlay");
   overlay.style.opacity = 1;
   overlay.style.fontSize = "36px";
   overlay.style.flexDirection = "column";
+  overlay.style.backgroundColor = "rgba(0,0,0,0.8)";
+
+  const btn = document.createElement("button");
+  btn.innerText = "Play Again";
+  btn.onclick = ()=>location.reload();
 
   if(type==="win"){
     overlay.style.color = "lime";
-    overlay.innerHTML = `VICTORY!<br><button onclick="location.reload()">Play Again</button>`;
+    overlay.innerHTML = "VICTORY!<br>";
+    overlay.appendChild(btn);
     createConfetti();
   }
   else {
     overlay.style.color = "red";
-    overlay.innerHTML = `DEFEAT!<br><button onclick="location.reload()">Try Again</button>`;
+    overlay.innerHTML = "DEFEAT!<br>";
+    overlay.appendChild(btn);
   }
 }
 
