@@ -108,7 +108,7 @@ footer { margin: 20px 0; }
 }
 .socials img:hover { transform: scale(1.2); filter: drop-shadow(0 0 10px #0ff); }
 
-/* HP bar: белый фон, цвет от зелёного к жёлтому (до 50%), затем к красному */
+/* HP bar: белый фон, цвет от зелёного к жёлтому (>50%), затем к красному (<=50%) */
 .hp-bar {
   width: 100%;
   height: 12px;
