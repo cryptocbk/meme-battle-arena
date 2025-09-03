@@ -9,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "Popcat",  img: "images/popcat.png" },
     { name: "Melania", img: "images/melania.png" },
   ];
+// ⚡ Временный сброс (один раз обнулит баланс и перезапишет его)
+localStorage.removeItem("balance");
 
   // ----- STATE -----
   let balance = parseFloat(localStorage.getItem("balance"));
