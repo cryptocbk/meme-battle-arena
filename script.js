@@ -23,10 +23,8 @@ const sounds = {
   win: new Audio("sounds/win.mp3"),
   lose: new Audio("sounds/lose.mp3"),
   draw: new Audio("sounds/draw.mp3"),
-  poison: new Audio("sounds/poison.mp3"),
-  heal: new Audio("sounds/heal.mp3"),
-  bg: new Audio("sounds/bg.mp3"),
-  evil: new Audio("sounds/evil.mp3") // для поражения
+  evil: new Audio("sounds/evil.mp3"),
+  bg: new Audio("sounds/bg.mp3")
 };
 sounds.bg.loop = true; sounds.bg.volume=0.3; sounds.bg.play();
 
@@ -98,7 +96,6 @@ document.getElementById("startBattle").addEventListener("click", async()=>{
   logDiv.innerHTML+=`Battle ended: ${result.toUpperCase()}<br>`;
 });
 
-// Flash screen for attack
 function flashScreen(type){
   const overlay=document.getElementById("resultOverlay");
   overlay.style.backgroundColor = type==="player"?"rgba(0,255,0,0.2)":"rgba(255,0,0,0.2)";
@@ -106,7 +103,6 @@ function flashScreen(type){
   setTimeout(()=>overlay.style.opacity=0,100);
 }
 
-// Show battle result
 function showResult(type){
   const overlay=document.getElementById("resultOverlay");
   if(type==="win"){
@@ -124,7 +120,6 @@ function showResult(type){
   }
 }
 
-// Confetti for victory
 function createConfetti(){
   for(let i=0;i<50;i++){
     const c=document.createElement("div"); c.className="confetti";
@@ -135,7 +130,6 @@ function createConfetti(){
   }
 }
 
-// History & Leaderboard
 function updateHistory(result, solChange){
   let history=JSON.parse(localStorage.getItem("history"))||[];
   history.push({result,solChange,date:new Date().toLocaleTimeString()});
