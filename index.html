@@ -8,51 +8,64 @@
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600&display=swap" rel="stylesheet">
 </head>
 <body>
-<header>
-  <h1>Meme Coin Battle Arena</h1>
-  <div class="balance">Balance: <span id="balance">3.000</span> ◎ SOL</div>
-</header>
+  <header>
+    <h1>Meme Coin Battle Arena</h1>
+    <div class="balance">Balance: <span id="balance">3.000</span> ◎ SOL</div>
+  </header>
 
-<main>
-  <section class="hero-selection">
-    <h2>Choose your Hero</h2>
-    <div id="heroes" class="hero-grid"></div>
-  </section>
+  <main>
+    <section class="hero-selection">
+      <h2>Choose your Hero</h2>
+      <div id="heroes" class="hero-grid"></div>
+    </section>
 
-  <section class="battle-settings">
-    <h2>Battle Settings</h2>
-    <label for="multiplier">Multiplier:</label>
-    <select id="multiplier">
-      <option value="2">x2 (50%)</option>
-      <option value="3">x3 (30%)</option>
-      <option value="5">x5 (15%)</option>
-    </select>
+    <section class="battle-settings">
+      <h2>Battle Settings</h2>
+      <label for="multiplier">Multiplier:</label>
+      <select id="multiplier">
+        <option value="2">x2 (50%)</option>
+        <option value="3">x3 (30%)</option>
+        <option value="5">x5 (15%)</option>
+      </select>
 
-    <label for="bet">Bet (◎ SOL): <span id="betValue">0.025</span></label>
-    <input type="range" id="bet" min="0.025" max="3" step="0.025" value="0.025">
-    <button id="startBattle">Start Battle</button>
-  </section>
+      <label for="bet">Bet (◎ SOL): <span id="betValue">0.025</span></label>
+      <input type="range" id="bet" min="0.025" max="3" step="0.025" value="0.025">
+      <button id="startBattle">Start Battle</button>
+    </section>
 
-  <section class="battle-arena">
-    <div class="result-overlay" id="resultOverlay"></div>
-    <div class="hero-container" id="playerHero"></div>
-    <div class="vs">VS</div>
-    <div class="hero-container" id="enemyHero"></div>
-  </section>
+    <section class="battle-arena">
+      <div class="hero-container" id="playerHero"></div>
+      <div class="vs">VS</div>
+      <div class="hero-container" id="enemyHero"></div>
+    </section>
 
-  <section class="battle-log">
-    <h2>Battle Log</h2>
-    <div id="log"></div>
-  </section>
-</main>
+    <section class="battle-log">
+      <h2>Battle Log</h2>
+      <div id="log"></div>
+    </section>
+  </main>
 
-<footer>
-  <div class="socials">
-    <a href="https://x.com/MemeBattleArena" target="_blank"><img src="images/x.png" alt="X"></a>
-    <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank"><img src="images/telegram.png" alt="Telegram"></a>
+  <!-- Модальное окно результата -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content">
+      <h2 id="resultTitle"></h2>
+      <p id="resultAmount"></p>
+      <div id="effectContainer"></div>
+      <button id="tryAgain">Try Again</button>
+    </div>
   </div>
-</footer>
 
-<script src="script.js"></script>
+  <footer>
+    <div class="socials">
+      <a href="https://x.com/MemeBattleArena?t=-12FlF825HL7cMaUmfoV_w&s=09" target="_blank">
+        <img src="images/x.png" alt="X">
+      </a>
+      <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank">
+        <img src="images/telegram.png" alt="Telegram">
+      </a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
