@@ -1,11 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Meme Coin Battle Arena</title>
-  <link rel="stylesheet" href="style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle, #0f0f0f, #1a1a1a);
+      color: #fff;
+      text-align: center;
+      overflow-x: hidden;
+    }
+    h1 {
+      font-family: 'Bangers', cursive;
+      color: #00ffea;
+      text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+    }
+    .hero-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .hero-card {
+      border: 2px solid #0ff;
+      border-radius: 10px;
+      padding: 5px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      width: 100px;
+      background: #111;
+    }
+    .hero-card:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px #0ff;
+    }
+    .hero-card img {
+      width: 100%;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+    .battle-arena {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      margin: 20px 0;
+      position: relative;
+      height: 220px;
+    }
+    .hero-container {
+      width: 150px;
+      height: 150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero-container img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+    }
+    .vs {
+      font-family: 'Bangers', cursive;
+      font-size: 48px;
+      margin: 0 20px;
+      color: #ff00ff;
+      text-shadow: 0 0 10px #ff0, 0 0 20px #f0f;
+    }
+    .hp-bar {
+      width: 100%;
+      height: 12px;
+      background: #fff;
+      border-radius: 5px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .hp-fill {
+      height: 100%;
+      background: green;
+      width: 100%;
+      transition: width 0.3s, background-color 0.3s;
+    }
+    .battle-log {
+      background: rgba(0,0,0,0.6);
+      margin: 20px auto;
+      padding: 10px;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 10px;
+      height: 150px;
+      overflow-y: auto;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(45deg, #0ff, #f0f, #0ff);
+      color: #000;
+      font-weight: bold;
+      text-shadow: 0 0 5px #fff;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 15px #0ff;
+    }
+    /* Модалка результата */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #111;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      width: 80%;
+      max-width: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-content h2 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .confetti, .skull {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: -20px;
+      opacity: 0.9;
+      animation: fall 3s linear forwards;
+    }
+    .confetti {
+      background: radial-gradient(circle, #ff0, #f00, #0f0, #0ff, #f0f);
+      border-radius: 50%;
+    }
+    .skull {
+      background: url('https://cdn-icons-png.flaticon.com/512/495/495902.png') no-repeat center/contain;
+    }
+    @keyframes fall {
+      0% { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(500px) rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -27,16 +177,12 @@
         <option value="3">x3 (30%)</option>
         <option value="5">x5 (15%)</option>
       </select>
-
       <label for="bet">Bet (◎ SOL): <span id="betValue">0.025</span></label>
       <input type="range" id="bet" min="0.025" max="3" step="0.025" value="0.025">
       <button id="startBattle">Start Battle</button>
     </section>
 
     <section class="battle-arena">
-      <!-- вспышки ударов -->
-      <div class="result-overlay" id="resultOverlay"></div>
-
       <div class="hero-container" id="playerHero"></div>
       <div class="vs">VS</div>
       <div class="hero-container" id="enemyHero"></div>
@@ -48,27 +194,163 @@
     </section>
   </main>
 
-  <!-- Модальное окно результата -->
-  <div id="resultModal" class="modal" aria-hidden="true">
+  <!-- Модальное окно -->
+  <div class="modal" id="resultModal">
     <div class="modal-content" id="modalContent">
       <h2 id="resultTitle"></h2>
       <p id="resultAmount"></p>
-      <div id="effectsContainer"></div>
-      <button id="closeModal">Try Again</button>
+      <button onclick="closeModal()">Try Again</button>
     </div>
   </div>
 
-  <footer>
-    <div class="socials">
-      <a href="https://x.com/MemeBattleArena" target="_blank" rel="noopener">
-        <img src="images/x.png" alt="X">
-      </a>
-      <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank" rel="noopener">
-        <img src="images/telegram.png" alt="Telegram">
-      </a>
-    </div>
-  </footer>
+  <script>
+    // ===== Звуки =====
+    const sounds = {
+      attack: new Audio("sounds/attack.mp3"),
+      crit: new Audio("sounds/crit.mp3"),
+      win: new Audio("sounds/win.mp3"),
+      lose: new Audio("sounds/lose.mp3"),
+      bg: new Audio("sounds/bg.mp3")
+    };
+    sounds.bg.loop = true;
+    sounds.bg.volume = 0.5;
+    window.addEventListener("load", () => sounds.bg.play());
 
-  <script src="script.js"></script>
+    // ===== Баланс =====
+    let balance = parseFloat(localStorage.getItem("balance"));
+    if (isNaN(balance)) {
+      balance = 3.0;
+      localStorage.setItem("balance", balance.toFixed(3));
+    }
+    document.getElementById("balance").innerText = balance.toFixed(3);
+
+    // ===== Герои =====
+    const heroes = [
+      { name: "Doge", img: "https://cryptocbk.github.io/meme-battle-arena/images/doge.png" },
+      { name: "Pepe", img: "https://cryptocbk.github.io/meme-battle-arena/images/pepe.png" },
+      { name: "Shiba", img: "https://cryptocbk.github.io/meme-battle-arena/images/shiba.png" }
+    ];
+    const heroesDiv = document.getElementById("heroes");
+    let playerHero = null;
+
+    heroes.forEach(hero => {
+      const card = document.createElement("div");
+      card.className = "hero-card";
+      card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><p>${hero.name}</p>`;
+      card.onclick = () => {
+        if (battleInProgress) return; // нельзя менять во время боя
+        playerHero = hero;
+        sounds.attack.play();
+        document.getElementById("playerHero").innerHTML =
+          `<img src="${hero.img}"><div class="hp-bar"><div class="hp-fill" id="playerHp"></div></div>`;
+      };
+      heroesDiv.appendChild(card);
+    });
+
+    // ===== Бой =====
+    let battleInProgress = false;
+    document.getElementById("bet").addEventListener("input", e => {
+      document.getElementById("betValue").innerText = parseFloat(e.target.value).toFixed(3);
+    });
+
+    document.getElementById("startBattle").addEventListener("click", () => {
+      if (!playerHero || battleInProgress) return;
+      const bet = parseFloat(document.getElementById("bet").value);
+      const multiplier = parseInt(document.getElementById("multiplier").value);
+      if (bet > balance) { alert("Not enough balance!"); return; }
+
+      const enemy = heroes[Math.floor(Math.random() * heroes.length)];
+      document.getElementById("enemyHero").innerHTML =
+        `<img src="${enemy.img}"><div class="hp-bar"><div class="hp-fill" id="enemyHp"></div></div>`;
+
+      battleInProgress = true;
+      fight(bet, multiplier);
+    });
+
+    function fight(bet, multiplier) {
+      let playerHp = 100, enemyHp = 100;
+      const log = document.getElementById("log");
+      log.innerHTML = "";
+
+      const interval = setInterval(() => {
+        let dmg = Math.floor(Math.random() * 20) + 5;
+        enemyHp = Math.max(0, enemyHp - dmg);
+        sounds.attack.play();
+        log.innerHTML += `<p>You hit enemy for ${dmg}</p>`;
+        updateHp("enemyHp", enemyHp);
+
+        if (enemyHp <= 0) {
+          clearInterval(interval);
+          endBattle(true, bet, multiplier);
+          return;
+        }
+
+        dmg = Math.floor(Math.random() * 20) + 5;
+        playerHp = Math.max(0, playerHp - dmg);
+        log.innerHTML += `<p>Enemy hit you for ${dmg}</p>`;
+        updateHp("playerHp", playerHp);
+
+        if (playerHp <= 0) {
+          clearInterval(interval);
+          endBattle(false, bet, multiplier);
+        }
+      }, 1000);
+    }
+
+    function updateHp(id, hp) {
+      const bar = document.getElementById(id);
+      if (!bar) return;
+      bar.style.width = hp + "%";
+      if (hp < 50) bar.style.background = "red";
+      else if (hp < 75) bar.style.background = "orange";
+      else bar.style.background = "green";
+    }
+
+    function endBattle(win, bet, multiplier) {
+      battleInProgress = false;
+      let resultTitle = document.getElementById("resultTitle");
+      let resultAmount = document.getElementById("resultAmount");
+      const modal = document.getElementById("resultModal");
+      const content = document.getElementById("modalContent");
+
+      if (win) {
+        const gain = bet * multiplier;
+        balance += gain;
+        resultTitle.innerText = "Victory!";
+        resultTitle.style.color = "#0f0";
+        resultAmount.innerText = `+${gain.toFixed(3)} ◎ SOL`;
+        sounds.win.play();
+        spawnEffects("confetti");
+      } else {
+        balance -= bet;
+        resultTitle.innerText = "Defeat!";
+        resultTitle.style.color = "#f00";
+        resultAmount.innerText = `-${bet.toFixed(3)} ◎ SOL`;
+        sounds.lose.play();
+        spawnEffects("skull");
+      }
+      document.getElementById("balance").innerText = balance.toFixed(3);
+      localStorage.setItem("balance", balance.toFixed(3));
+
+      modal.style.display = "flex";
+    }
+
+    function spawnEffects(type) {
+      const content = document.getElementById("modalContent");
+      for (let i = 0; i < 30; i++) {
+        const el = document.createElement("div");
+        el.className = type;
+        el.style.left = Math.random() * 100 + "%";
+        el.style.animationDuration = (2 + Math.random() * 3) + "s";
+        content.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById("resultModal").style.display = "none";
+      document.querySelectorAll(".confetti, .skull").forEach(el => el.remove());
+    }
+  </script>
 </body>
 </html>
