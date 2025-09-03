@@ -141,33 +141,82 @@ footer {
 }
 
 /* Модальное окно */
-#resultModal {
+.modal {
   display: none;
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8);
+  z-index: 50;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-  z-index: 100;
 }
 
-#resultEffects {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+.modal-content {
+  background: #111;
+  border: 2px solid #0ff;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  width: 80%;
+  max-width: 400px;
+  position: relative;
   overflow: hidden;
-  pointer-events: none;
 }
 
+.modal-content h2 {
+  font-family: 'Bangers', cursive;
+  font-size: 36px;
+}
+
+.modal-content p {
+  margin: 10px 0;
+  font-size: 20px;
+}
+
+/* Победное/пораженческое мерцание */
+.modal.victory .modal-content {
+  animation: flashGreen 1.2s ease-in-out infinite alternate;
+}
+.modal.defeat .modal-content {
+  animation: flashRed 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes flashGreen {
+  from { box-shadow: 0 0 20px lime; }
+  to { box-shadow: 0 0 60px lime; }
+}
+
+@keyframes flashRed {
+  from { box-shadow: 0 0 20px red; }
+  to { box-shadow: 0 0 60px red; }
+}
+
+/* Конфетти и черепа */
 .confetti, .skull {
   position: absolute;
-  font-size: 22px;
-  animation: fall 2.5s linear forwards;
+  top: -30px;
+  opacity: 0.9;
 }
 
-@keyframes fall {
-  from { transform: translateY(0); }
-  to { transform: translateY(100vh); }
+.confetti {
+  border-radius: 50%;
+  animation: fallConfetti linear forwards;
+}
+
+@keyframes fallConfetti {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(100vh) rotate(720deg); }
+}
+
+.skull {
+  animation: fallSkull ease-in forwards;
+}
+
+@keyframes fallSkull {
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(100vh) rotate(360deg); }
 }
