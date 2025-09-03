@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Meme Coin Battle Arena</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meme Coin Battle Arena</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Orbitron:wght@600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <!-- Buffer polyfill для браузера -->
-<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
-<script>
-  // выставим глобальную переменную Buffer если она ещё не определена
-  if (typeof window.Buffer === 'undefined' && window.buffer && window.buffer.Buffer) {
-    window.Buffer = window.buffer.Buffer;
-  }
-</script>
 
-<!-- Solana web3 (IIFE) -->
-<script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.js"></script>
+  <!-- ===== Buffer polyfill (must load BEFORE solana web3) ===== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js" integrity="sha512-gmAl2O5x0k8d0zY3h5Uf1p0y6k6P3lZq2q0bT4m2u8v6x6Y2m2j1K0YUqWf+G5G3U/7Z8X0D1Zs2XQxqYg+0A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    // safety globals for some libs
+    if (typeof window.global === 'undefined') window.global = window;
+    if (typeof window.process === 'undefined') window.process = { env: {} };
+    try {
+      if (typeof window.Buffer === 'undefined') {
+        if (window.buffer && window.buffer.Buffer) window.Buffer = window.buffer.Buffer;
+        else if (typeof Buffer !== 'undefined') window.Buffer = Buffer;
+      }
+    } catch (e) {
+      console.warn('Buffer polyfill setup error', e);
+    }
+  </script>
 
-
-  <!-- Solana web3 (IIFE build) - quick test via CDN -->
+  <!-- ===== Solana web3 (IIFE build) - loaded after polyfill ===== -->
   <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.js"></script>
 </head>
 <body>
@@ -27,12 +32,11 @@
     <h1>Meme Coin Battle Arena</h1>
     <div class="balance">
       Balance: <span id="balance">3.000</span> ◎ SOL
-      <!-- Wallet UI -->
       <button id="connectWalletBtn" style="margin-left:12px;">Connect Wallet</button>
-      <button id="testSendBtn" style="margin-left:8px;background:#ffb86b;">Test Send 0.01 SOL</button>
-
       <span id="walletAddress" style="margin-left:8px; font-size:12px;"></span>
       <span id="walletBalance" style="margin-left:8px; font-size:12px;"></span>
+      <!-- Temporary test button (you can remove later) -->
+      <button id="testSendBtn" style="margin-left:12px;background:#ffb86b;">Test Send 0.01 SOL</button>
     </div>
   </header>
 
@@ -91,16 +95,12 @@
 
   <footer>
     <div class="socials">
-      <a href="https://x.com/MemeBattleArena" target="_blank" rel="noopener">
-        <img src="images/x.png" alt="X" />
-      </a>
-      <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank" rel="noopener">
-        <img src="images/telegram.png" alt="Telegram" />
-      </a>
+      <a href="https://x.com/MemeBattleArena" target="_blank" rel="noopener"><img src="images/x.png" alt="X" /></a>
+      <a href="https://t.me/+TI7vQPR1dJ4zOWVi" target="_blank" rel="noopener"><img src="images/telegram.png" alt="Telegram" /></a>
     </div>
   </footer>
 
-  <!-- Wallet integration (new) -->
+  <!-- Wallet integration (must load before game script) -->
   <script src="wallet.js"></script>
   <!-- Game logic -->
   <script src="script.js"></script>
