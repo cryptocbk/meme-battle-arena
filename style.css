@@ -124,7 +124,6 @@ footer {
   filter: drop-shadow(0 0 10px #0ff);
 }
 
-/* HP BAR */
 .hp-bar {
   width: 100%;
   height: 12px;
@@ -132,7 +131,6 @@ footer {
   border-radius: 5px;
   margin-top: 5px;
   overflow: hidden;
-  border: 1px solid #000;
 }
 
 .hp-fill {
@@ -142,53 +140,34 @@ footer {
   border-radius: 5px;
 }
 
-/* Modal */
-.modal {
+/* Модальное окно */
+#resultModal {
   display: none;
   position: fixed;
-  z-index: 50;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 100;
 }
 
-.modal-content {
-  background: #111;
-  color: #fff;
-  margin: 10% auto;
-  padding: 20px;
-  border-radius: 15px;
-  width: 300px;
-  text-align: center;
-  box-shadow: 0 0 20px #0ff;
-}
-
-.modal-content h2 {
-  font-family: 'Bangers', cursive;
-  font-size: 36px;
+#resultEffects {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .confetti, .skull {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  opacity: 0.9;
-  animation: fall 2s linear forwards;
-  z-index: 100;
-}
-
-.confetti {
-  border-radius: 50%;
-}
-
-.skull::before {
-  content: "☠️";
-  font-size: 20px;
+  font-size: 22px;
+  animation: fall 2.5s linear forwards;
 }
 
 @keyframes fall {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(100vh); opacity: 0; }
+  from { transform: translateY(0); }
+  to { transform: translateY(100vh); }
 }
