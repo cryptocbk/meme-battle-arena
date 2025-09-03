@@ -10,7 +10,6 @@ const heroesData = [
 ];
 
 /* =================== Balance =================== */
-// Первый запуск = 3.000 SOL
 let balance = parseFloat(localStorage.getItem("balance"));
 if (isNaN(balance)) {
   balance = 3.0;
@@ -25,81 +24,52 @@ const sounds = {
   win:    new Audio("sounds/win.mp3"),
   lose:   new Audio("sounds/lose.mp3"),
   select: new Audio("sounds/select.mp3"),
-  bg:     new Audio("sounds/bg.mp3"),
+  bg:     new Audio("sounds/bg.mp3")
 };
 sounds.bg.loop = true;
-sounds.bg.volume = 0.32;
+sounds.bg.volume = 0.35;
 
-// Разрешаем воспроизведение после первого взаимодействия
+// unlock bg on first interaction (mobile autoplay policy)
 let audioUnlocked = false;
 function unlockAudioOnce() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  try { sounds.bg.play(); } catch (e) {}
-  // легкий "разогрев" коротких звуков
-  ["select","attack","crit","win","lose"].forEach(k => { try { sounds[k].play().then(()=>sounds[k].pause()); } catch(e){} });
+  try { sounds.bg.play().catch(()=>{}); } catch(e){}
+  // prime short sounds
+  ["select","attack","crit","win","lose"].forEach(k => {
+    try { sounds[k].play().then(()=>sounds[k].pause()).catch(()=>{}); } catch(e){}
+  });
   document.removeEventListener("click", unlockAudioOnce);
   document.removeEventListener("touchstart", unlockAudioOnce);
 }
-document.addEventListener("click", unlockAudioOnce, { once:false });
-document.addEventListener("touchstart", unlockAudioOnce, { once:false });
+document.addEventListener("click", unlockAudioOnce);
+document.addEventListener("touchstart", unlockAudioOnce);
 
-/* =================== DOM =================== */
+/* =================== DOM refs =================== */
 const heroesDiv = document.getElementById("heroes");
 const betSlider = document.getElementById("bet");
 const betValueSpan = document.getElementById("betValue");
 const logDiv = document.getElementById("log");
-
-const playerHeroBox = document.getElementById("playerHero");
-const enemyHeroBox  = document.getElementById("enemyHero");
 const playerStatsBox = document.getElementById("playerStats");
 const enemyStatsBox  = document.getElementById("enemyStats");
+const modal = document.getElementById("resultModal");
+const modalContent = document.getElementById("modalContent");
+const titleEl = document.getElementById("resultTitle");
+const amountEl = document.getElementById("resultAmount");
+const effectContainer = document.getElementById("effectContainer");
+const tryAgainBtn = document.getElementById("tryAgain");
 
-let playerHero = null;
-let enemyHero = null;
-let playerStats = null;
-let enemyStats  = null;
+let playerHero = null, enemyHero = null;
+let playerStats = null, enemyStats = null;
 let battleInProgress = false;
 
-/* =================== UI =================== */
-betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
+/* =================== Utils =================== */
+function sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+function safePlay(a){ try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){} }
+function logLine(txt){ logDiv.innerHTML += txt + "<br>"; logDiv.scrollTop = logDiv.scrollHeight; }
 
-function renderHeroCard(hero) {
-  const card = document.createElement("div");
-  card.className = "hero-card";
-  card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
-  card.addEventListener("click", () => {
-    if (battleInProgress) return;
-    try { sounds.select.currentTime = 0; sounds.select.play(); } catch(e){}
-    playerHero = { ...hero, hp: 100 };
-    playerStats = rollStats();
-    renderFighter("playerHero", playerHero);
-    renderStats(playerStatsBox, playerStats);
-  });
-  return card;
-}
-
-function renderFighter(containerId, hero) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = `
-    <img src="${hero.img}" alt="${hero.name}">
-    <div class="hp-bar"><div class="hp-fill" id="${containerId==='playerHero'?'playerHp':'enemyHp'}" style="width:100%"></div></div>
-  `;
-}
-
-function renderStats(container, s) {
-  container.innerHTML = `
-    <div>🗡️ Атака: <b>${s.atk}</b></div>
-    <div>🛡️ Защита: <b>${s.def}</b></div>
-    <div>💥 Крит: <b>${(s.crit*100).toFixed(0)}%</b></div>
-    <div>🦊 Ловкость: <b>${s.agi}</b></div>
-    <div>✨ Скилл: <b>${s.skill}</b></div>
-  `;
-}
-
-/* =================== Stats =================== */
-function rollStats() {
-  // Диапазоны можно менять под вкус
+/* =================== Stats roll & render =================== */
+function rollStats(){
   return {
     atk:  Math.floor(15 + Math.random()*25),        // 15..40
     def:  Math.floor(5 + Math.random()*20),         // 5..25
@@ -108,36 +78,72 @@ function rollStats() {
     skill:Math.floor(1 + Math.random()*10)          // 1..10
   };
 }
+function renderStats(container, s){
+  container.innerHTML = `
+    <div>🗡️ Attack: <b>${s.atk}</b></div>
+    <div>🛡️ Defense: <b>${s.def}</b></div>
+    <div>💥 Crit: <b>${(s.crit*100).toFixed(0)}%</b></div>
+    <div>🦊 Agility: <b>${s.agi}</b></div>
+    <div>✨ Skill: <b>${s.skill}</b></div>
+  `;
+}
 
-/* =================== Heroes list =================== */
-heroesData.forEach(h => heroesDiv.appendChild(renderHeroCard(h)));
+/* =================== Render heroes =================== */
+function createHeroCard(hero){
+  const card = document.createElement("div");
+  card.className = "hero-card";
+  card.innerHTML = `<img src="${hero.img}" alt="${hero.name}"><div>${hero.name}</div>`;
+  card.addEventListener("click", () => {
+    if (battleInProgress) return;
+    // click sound always
+    safePlay(sounds.select);
+    playerHero = { ...hero, hp: 100 };
+    playerStats = rollStats();
+    renderFighter("playerHero", playerHero);
+    renderStats(playerStatsBox, playerStats);
+  });
+  return card;
+}
+heroesData.forEach(h => heroesDiv.appendChild(createHeroCard(h)));
 
-/* =================== Battle =================== */
+/* render fighter avatar + hp bar */
+function renderFighter(containerId, hero){
+  const el = document.getElementById(containerId);
+  el.innerHTML = `
+    <img src="${hero.img}" alt="${hero.name}">
+    <div class="hp-bar"><div class="hp-fill" id="${containerId==='playerHero'?'playerHp':'enemyHp'}" style="width:100%"></div></div>
+  `;
+}
+
+/* =================== Bet UI =================== */
+betSlider.addEventListener("input", () => betValueSpan.innerText = parseFloat(betSlider.value).toFixed(3));
+
+/* =================== Battle logic =================== */
 document.getElementById("startBattle").addEventListener("click", async () => {
   if (!playerHero) { alert("Choose a hero!"); return; }
   if (battleInProgress) return;
 
-  // Запрещаем менять героя на время боя
+  const bet = parseFloat(betSlider.value);
+  const multiplier = parseInt(document.getElementById("multiplier").value,10);
+  if (balance < bet) { alert("Not enough balance!"); return; }
+
+  // lock selection
   battleInProgress = true;
   setCardsDisabled(true);
 
-  // Противник
+  // spawn enemy and stats
   enemyHero = { ...heroesData[Math.floor(Math.random()*heroesData.length)], hp: 100 };
   enemyStats = rollStats();
   renderFighter("enemyHero", enemyHero);
   renderStats(enemyStatsBox, enemyStats);
 
-  const bet = parseFloat(betSlider.value);
-  const multiplier = parseInt(document.getElementById("multiplier").value);
-  if (balance < bet) { alert("Not enough balance!"); battleInProgress=false; setCardsDisabled(false); return; }
-
   logDiv.innerHTML = "";
 
-  // Бой: попеременные удары, длится пока у кого-то HP > 0
+  // fight loop: player hits then enemy hits until someone <=0
   while (playerHero.hp > 0 && enemyHero.hp > 0) {
     await sleep(650);
 
-    // Игрок атакует
+    // player attack
     let pdmg = rollDamage(playerStats, enemyStats);
     if (Math.random() < playerStats.crit) { pdmg = Math.floor(pdmg * 1.8); safePlay(sounds.crit); }
     enemyHero.hp = Math.max(0, enemyHero.hp - pdmg);
@@ -149,7 +155,7 @@ document.getElementById("startBattle").addEventListener("click", async () => {
 
     await sleep(500);
 
-    // Враг атакует
+    // enemy attack
     let edmg = rollDamage(enemyStats, playerStats);
     if (Math.random() < enemyStats.crit) { edmg = Math.floor(edmg * 1.8); safePlay(sounds.crit); }
     playerHero.hp = Math.max(0, playerHero.hp - edmg);
@@ -158,117 +164,117 @@ document.getElementById("startBattle").addEventListener("click", async () => {
     updateHpBar("playerHp", playerHero.hp);
   }
 
-  // Результат
+  // calculate result
   const win = playerHero.hp > enemyHero.hp;
   if (win) {
     const gain = bet * multiplier;
     balance += gain;
-    showResultModal({ type: "win", amount: gain });
     safePlay(sounds.win);
+    showResultModal({ type: "win", amount: gain });
   } else {
     balance -= bet;
-    showResultModal({ type: "lose", amount: bet });
     safePlay(sounds.lose);
+    showResultModal({ type: "lose", amount: bet });
   }
+
   localStorage.setItem("balance", balance.toFixed(3));
   document.getElementById("balance").innerText = balance.toFixed(3);
 
-  // Разрешаем менять героя
+  // unlock selection
   battleInProgress = false;
   setCardsDisabled(false);
 });
 
-/* =================== Combat helpers =================== */
-function rollDamage(attacker, defender) {
-  // Базовый разброс + влияние статов
-  const base = 8 + Math.random()*12;                 // 8..20
+/* damage formula */
+function rollDamage(attacker, defender){
+  const base = 8 + Math.random()*12; // 8..20
   const atkBonus = attacker.atk * 0.6 + attacker.skill * 0.8;
   const defMit   = defender.def * 0.45 + defender.agi * 0.2;
-  let dmg = Math.max(3, Math.round(base + atkBonus - defMit));
-  return dmg;
+  return Math.max(3, Math.round(base + atkBonus - defMit));
 }
 
-function updateHpBar(id, hp) {
+/* smooth HP color interpolation:
+   >50% : interpolate from yellow(255,200,0) at 50 -> green(0,200,0) at 100
+   <=50%: interpolate from red(220,0,0) at 0 -> yellow(255,200,0) at 50
+*/
+function updateHpBar(id, hp){
   const el = document.getElementById(id);
   if (!el) return;
   el.style.width = hp + "%";
-  // Плавное покраснение после 50%
-  const t = Math.max(0, (50 - Math.max(0, hp - 50)) / 50); // 0..1 начиная с 50%
-  // Interpolate: green (0,200,0) -> red (220,0,0)
-  const r = Math.round(0 + t * (220 - 0));
-  const g = Math.round(200 - t * (200 - 0));
+
+  let r,g;
+  if (hp > 50) {
+    const frac = (hp - 50) / 50; // 0..1
+    r = Math.round(255 * (1 - frac));
+    g = 200;
+  } else {
+    const frac = hp / 50; // 0..1
+    r = 255;
+    g = Math.round(200 * frac);
+  }
   el.style.backgroundColor = `rgb(${r},${g},0)`;
 }
 
-function logLine(text) {
-  logDiv.innerHTML += `${text}<br>`;
-  logDiv.scrollTop = logDiv.scrollHeight;
-}
-
-function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
-function safePlay(a){ try { a.currentTime = 0; a.play(); } catch(e){} }
-function setCardsDisabled(disabled) {
-  document.querySelectorAll(".hero-card").forEach(c=>{
+/* disable / enable hero cards while fighting */
+function setCardsDisabled(disabled){
+  document.querySelectorAll(".hero-card").forEach(c => {
     if (disabled) c.classList.add("disabled"); else c.classList.remove("disabled");
   });
 }
 
-/* =================== Modal & Effects =================== */
-const modal = document.getElementById("resultModal");
-const modalContent = document.getElementById("modalContent");
-const titleEl = document.getElementById("resultTitle");
-const amountEl = document.getElementById("resultAmount");
-const effectContainer = document.getElementById("effectContainer");
-document.getElementById("tryAgain").addEventListener("click", () => {
+/* =================== Modal / effects =================== */
+tryAgainBtn.addEventListener("click", () => {
   modal.style.display = "none";
   effectContainer.innerHTML = "";
 });
 
-function showResultModal({ type, amount }) {
+/* spawn ribbons (ribbons) inside modal */
+function spawnRibbons(n=60){
+  for (let i=0;i<n;i++){
+    const el = document.createElement("div");
+    el.className = "ribbon";
+    el.style.left = Math.random()*100 + "%";
+    el.style.setProperty("--dx", (Math.random()*380 - 190) + "px");
+    el.style.setProperty("--rot", (360 + Math.random()*1080) + "deg");
+    el.style.setProperty("--t", (2.6 + Math.random()*2.4) + "s");
+    const hue = Math.floor(Math.random()*360);
+    el.style.background = `linear-gradient(${Math.random()*360}deg, hsl(${hue} 80% 55%), hsl(${(hue+40)%360} 80% 45%))`;
+    effectContainer.appendChild(el);
+    setTimeout(()=>el.remove(), 5200);
+  }
+}
+
+/* spawn skull emojis inside modal */
+function spawnSkulls(n=50){
+  for (let i=0;i<n;i++){
+    const el = document.createElement("div");
+    el.className = "skull";
+    el.textContent = "💀"; // fallback visible emoji
+    el.style.left = Math.random()*100 + "%";
+    el.style.fontSize = (12 + Math.random()*18) + "px";
+    el.style.setProperty("--dx", (Math.random()*360 - 180) + "px");
+    el.style.setProperty("--rot", (180 + Math.random()*900) + "deg");
+    el.style.setProperty("--t", (2.6 + Math.random()*2.6) + "s");
+    effectContainer.appendChild(el);
+    setTimeout(()=>el.remove(), 5200);
+  }
+}
+
+function showResultModal({type, amount}){
   effectContainer.innerHTML = "";
   modalContent.classList.remove("win","lose");
-  modalContent.classList.add(type === "win" ? "win" : "lose");
+  modalContent.classList.add(type==="win"?"win":"lose");
 
-  if (type === "win") {
+  if (type === "win"){
     titleEl.style.color = "lime";
     titleEl.textContent = "VICTORY!";
     amountEl.textContent = `+${amount.toFixed(3)} ◎ SOL`;
-    spawnRibbons(60); // ленточки-конфетти
+    spawnRibbons(70);
   } else {
     titleEl.style.color = "red";
     titleEl.textContent = "DEFEAT!";
     amountEl.textContent = `-${amount.toFixed(3)} ◎ SOL`;
-    spawnSkulls(50);   // черепа
+    spawnSkulls(60);
   }
-
   modal.style.display = "flex";
-}
-
-function spawnRibbons(n=50) {
-  for (let i=0; i<n; i++) {
-    const rb = document.createElement("div");
-    rb.className = "ribbon";
-    rb.style.left = Math.random()*100 + "%";
-    rb.style.setProperty("--dx", (Math.random()*300 - 150) + "px");   // дрейф влево/вправо
-    rb.style.setProperty("--rot", (360 + Math.random()*1080) + "deg");// вращение
-    rb.style.setProperty("--t",   (2.8 + Math.random()*2.2) + "s");   // длительность
-    // красивый градиент ленточки
-    const hue = Math.floor(Math.random()*360);
-    rb.style.background = `linear-gradient(${Math.random()*360}deg, hsl(${hue} 90% 55%), hsl(${(hue+60)%360} 90% 50%))`;
-    effectContainer.appendChild(rb);
-    setTimeout(()=>rb.remove(), 5000);
-  }
-}
-
-function spawnSkulls(n=40) {
-  for (let i=0; i<n; i++) {
-    const sk = document.createElement("div");
-    sk.className = "skull";
-    sk.style.left = Math.random()*100 + "%";
-    sk.style.setProperty("--dx", (Math.random()*260 - 130) + "px");
-    sk.style.setProperty("--rot", (360 + Math.random()*1080) + "deg");
-    sk.style.setProperty("--t",   (2.8 + Math.random()*2.2) + "s");
-    effectContainer.appendChild(sk);
-    setTimeout(()=>sk.remove(), 5000);
-  }
 }
